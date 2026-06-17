@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datos de los Proyectos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #0f172a;
+            --secondary: #2563eb;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            
+            /* Colores de Subproyectos */
+            --serex-color: #ef4444;
+            --serex-light: #fee2e2;
+            --sia-color: #10b981;
+            --sia-light: #d1fae5;
+            --siade-color: #8b5cf6;
+            --siade-light: #f3e8ff;
+            --sfoca-color: #f97316;
+            --sfoca-light: #ffedd5;
+            
+            /* Estados */
+            --bg-si: #d1fae5;
+            --text-si: #065f46;
+            --bg-no: #fee2e2;
+            --text-no: #991b1b;
+            --bg-parcial: #fef3c7;
+            --text-parcial: #92400e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 30px;
+            line-height: 1.5;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 24px 32px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            border: 1px solid var(--border);
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* Navegación de Pestañas Principales */
+        .main-nav {
+            display: flex;
+            gap: 10px;
+            background: #e2e8f0;
+            padding: 6px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            max-width: fit-content;
+        }
+
+        .main-tab {
+            background: none;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .main-tab.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Navegación de Módulos (Subproyectos) */
+        .sub-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .sub-tab {
+            border: 1px solid var(--border);
+            background: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .sub-tab.active[data-sub="SEREX"] { background: var(--serex-color); color: white; border-color: var(--serex-color); }
+        .sub-tab.active[data-sub="SIA"] { background: var(--sia-color); color: white; border-color: var(--sia-color); }
+        .sub-tab.active[data-sub="SIADE"] { background: var(--siade-color); color: white; border-color: var(--siade-color); }
+        .sub-tab.active[data-sub="SFOCA"] { background: var(--sfoca-color); color: white; border-color: var(--sfoca-color); }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.01);
+            margin-bottom: 25px;
+        }
+
+        .card h2 {
+            font-size: 18px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        /* Matriz de Datos Globales */
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 13.5px;
+        }
+
+        .matrix-table th, .matrix-table td {
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .matrix-table thead th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .subproject-header-row th {
+            background-color: #f1f5f9 !important;
+            color: #1e293b !important;
+            font-weight: 800;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .cell-si { background-color: var(--bg-si); color: var(--text-si); font-weight: 700; text-align: center; }
+        .cell-no { background-color: var(--bg-no); color: var(--text-no); font-weight: 700; text-align: center; }
+        .cell-parcial { background-color: var(--bg-parcial); color: var(--text-parcial); font-weight: 700; text-align: center; }
+        .cell-value { color: #1d4ed8; font-weight: 600; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13.5px;
+        }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { color: #64748b; font-weight: 500; text-align: left; max-width: 65%; }
+        .metric-val { font-weight: 600; color: #0f172a; background: #f8fafc; padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: right; }
+
+        .actor-badge {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .chart-container { position: relative; height: 280px; width: 100%; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .sub-content { display: none; }
+        .sub-content.active { display: block; }
+
+        .svg-container {
+            width: 100%;
+            background: #fafbfc;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><b>Datos de los Proyectos</b></h1>
+        <p style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">Análisis SEREX, SIA, SIADE, SFOCA</p>
+    </header>
+
+    <div class="main-nav">
+        <button class="main-tab active" onclick="switchMainTab('vista-global')">📂 Vista Global Comparativa</button>
+        <button class="main-tab" onclick="switchMainTab('vista-subproyectos')">📂 Módulos por Subproyecto</button>
+        <button class="main-tab" onclick="switchMainTab('vista-estructuras')">📂 Mapas Mentales</button>
+    </div>
+
+    <div id="vista-global" class="tab-panel active">
+        <div class="card" style="overflow-x: auto;">
+            <h2>📊 Indicadores por Actores de Subproyectos</h2>
+            <table class="matrix-table">
+                <thead>
+                    <tr class="subproject-header-row">
+                        <th>SEREX</th>
+                        <th>Cumplió con el proyecto</th>
+                        <th>Incremento de Productividad</th>
+                        <th>Nº Beneficiarios</th>
+                        <th>Tasa de Sobrevivencia</th>
+                        <th>Tasa de Crecimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SEREX Actor1</td>
+                        <td class="cell-si">Sí</td>
+                        <td class="cell-value">15-20%</td>
+                        <td class="cell-value">10</td>
+                        <td class="cell-value">20%</td>
+                        <td class="cell-value">50%</td>
+                    </tr>
+                    <tr>
+                        <td>SEREX Actor2</td>
+                        <td class="cell-si">Sí</td>
+                        <td class="cell-value">15-20%</td>
+                        <td class="cell-value">~20</td>
+                        <td class="cell-value">67%</td>
+                        <td class="cell-value">65mm</td>
+                    </tr>
+                    <tr>
+                        <td>SEREX Actor3</td>
+                        <td class="cell-si">Sí</td>
+                        <td class="cell-value">0-5%</td>
+                        <td class="cell-value">10</td>
+                        <td class="cell-value">100%</td>
+                        <td class="cell-value">70%</td>
+                    </tr>
+                    
+                    <tr class="subproject-header-row">
+                        <th>SIA</th>
+                        <th>Cumplió con el proyecto</th>
+                        <th>Factor de conversión alimenticia</th>
+                        <th>Mejoras</th>
+                        <th>Alianzas</th>
+                        <th>—</th>
+                    </tr>
+                    <tr>
+                        <td>SIA Actor1</td>
+                        <td class="cell-si">Sí</td>
+                        <td class="cell-value">15-20%</td>
+                        <td>Mejora de los lodos y parámetros de calidad de agua</td>
+                        <td class="cell-value">Universidades</td>
+                        <td style="color:var(--text-muted);">—</td>
+                    </tr>
+                    <tr>
+                        <td>SIA Actor2</td>
+                        <td class="cell-si">Sí</td>
+                        <td class="cell-value">10%</td>
+                        <td>Mejora de O2, pH, y nitrogenados</td>
+                        <td class="cell-value">Alianzas con CITEs y Universidades</td>
+                        <td style="color:var(--text-muted);">—</td>
+                    </tr>
+
+                    <tr class="subproject-header-row">
+                        <th>SIADE</th>
+                        <th>Cumplió con el proyecto</th>
+                        <th>Incremento de Productividad</th>
+                        <th>Generó capacidades de investigadores jóvenes</th>
+                        <th>Se articuló con otras entidades</th>
+                        <th>Se logró transferir la tecnología</th>
+                    </tr>
+                    <tr>
+                        <td>SIADE Actor1</td>
+                        <td class="cell-si">Sí</td>
+                        <td style="color:var(--text-muted);">No sabe</td>
+                        <td class="cell-si">Sí</td>
+                        <td class="cell-no">No</td>
+                        <td class="cell-no">No</td>
+                    </tr>
+                    <tr>
+                        <td>SIADE Actor2</td>
+                        <td class="cell-si">Sí</td>
+                        <td style="color:var(--text-muted);">No sabe</td>
+                        <td class="cell-no">No</td>
+                        <td class="cell-si">Sí</td>
+                        <td class="cell-si">Sí</td>
+                    </tr>
+                    <tr>
+                        <td>SIADE Actor3</td>
+                        <td class="cell-si">Sí</td>
+                        <td style="color:var(--text-muted);">No sabe</td>
+                        <td class="cell-parcial">Parcial</td>
+                        <td class="cell-no">No</td>
+                        <td class="cell-no">No</td>
+                    </tr>
+
+                    <tr class="subproject-header-row">
+                        <th>SFOCA</th>
+                        <th>Cumplió con el proyecto</th>
+                        <th>Edad de participantes</th>
+                        <th>Inclusión de mujeres y jóvenes</th>
+                        <th>Alianzas</th>
+                        <th>Nº de beneficiarios</th>
+                    </tr>
+                    <tr>
+                        <td>SFOCA Actor1</td>
+                        <td class="cell-si">Sí</td>
+                        <td class="cell-value">20-30 años</td>
+                        <td class="cell-value">20%</td>
+                        <td class="cell-value">Universidades</td>
+                        <td class="cell-value">5-10</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>👥 Volumen de Beneficiarios</h2>
+                <div class="chart-container">
+                    <canvas id="barBeneficiariosCorrecto"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2>📈 Índice de Cumplimiento General por Subproyecto</h2>
+                <div class="chart-container">
+                    <canvas id="doughnutCumplimiento"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-subproyectos" class="tab-panel">
+        <div class="sub-nav">
+            <button class="sub-tab active" data-sub="SEREX" onclick="switchSubTab('SEREX')">SEREX</button>
+            <button class="sub-tab" data-sub="SIA" onclick="switchSubTab('SIA')">SIA</button>
+            <button class="sub-tab" data-sub="SIADE" onclick="switchSubTab('SIADE')">SIADE</button>
+            <button class="sub-tab" data-sub="SFOCA" onclick="switchSubTab('SFOCA')">SFOCA</button>
+        </div>
+
+        <div id="panel-SEREX" class="sub-content active">
+            <div style="margin-bottom: 20px;"><span class="actor-badge" style="background:var(--serex-light); color:var(--serex-color);">Módulo SEREX</span></div>
+            <div class="grid-2">
+                <div class="grid-3" style="grid-column: span 2;">
+                    <div class="card" style="padding:20px; border-top: 4px solid var(--serex-color);">
+                        <h4 style="color:var(--serex-color); margin-bottom:12px;">SEREX - Actor 1</h4>
+                        <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">% de productividad</span><span class="metric-val">15-20%</span></div>
+                        <div class="metric-row"><span class="metric-label">Nº de beneficiarios</span><span class="metric-val">10</span></div>
+                        <div class="metric-row"><span class="metric-label">Tasa de sobrevivencia</span><span class="metric-val">20%</span></div>
+                        <div class="metric-row"><span class="metric-label">Tasa de crecimiento</span><span class="metric-val">50%</span></div>
+                    </div>
+                    <div class="card" style="padding:20px; border-top: 4px solid var(--serex-color);">
+                        <h4 style="color:var(--serex-color); margin-bottom:12px;">SEREX - Actor 2</h4>
+                        <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">% de productividad</span><span class="metric-val">15-20%</span></div>
+                        <div class="metric-row"><span class="metric-label">Nº de beneficiarios</span><span class="metric-val">~20</span></div>
+                        <div class="metric-row"><span class="metric-label">Tasa de sobrevivencia</span><span class="metric-val">67%</span></div>
+                        <div class="metric-row"><span class="metric-label">Tasa de crecimiento</span><span class="metric-val">65mm</span></div>
+                    </div>
+                    <div class="card" style="padding:20px; border-top: 4px solid var(--serex-color);">
+                        <h4 style="color:var(--serex-color); margin-bottom:12px;">SEREX - Actor 3</h4>
+                        <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">% de productividad</span><span class="metric-val">0-5%</span></div>
+                        <div class="metric-row"><span class="metric-label">Nº de beneficiarios</span><span class="metric-val">10</span></div>
+                        <div class="metric-row"><span class="metric-label">Tasa de sobrevivencia</span><span class="metric-val">100%</span></div>
+                        <div class="metric-row"><span class="metric-label">Tasa de crecimiento</span><span class="metric-val">70%</span></div>
+                    </div>
+                </div>
+                <div class="card"><div class="chart-container"><canvas id="barSEREX"></canvas></div></div>
+                <div class="card"><div class="chart-container"><canvas id="donaSEREX"></canvas></div></div>
+            </div>
+        </div>
+
+        <div id="panel-SIA" class="sub-content">
+            <div style="margin-bottom: 20px;"><span class="actor-badge" style="background:var(--sia-light); color:var(--sia-color);">Módulo SIA</span></div>
+            <div class="grid-2">
+                <div class="grid-2" style="grid-column: span 2;">
+                    <div class="card" style="padding:20px; border-top: 4px solid var(--sia-color);">
+                        <h4 style="color:var(--sia-color); margin-bottom:12px;">SIA - Actor 1</h4>
+                        <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">Factor conversión alimenticia</span><span class="metric-val">15-20%</span></div>
+                        <div class="metric-row"><span class="metric-label">Mejoras</span><span class="metric-val">Lodos y Parámetros de Agua</span></div>
+                        <div class="metric-row"><span class="metric-label">Alianzas</span><span class="metric-val">Universidades</span></div>
+                    </div>
+                    <div class="card" style="padding:20px; border-top: 4px solid var(--sia-color);">
+                        <h4 style="color:var(--sia-color); margin-bottom:12px;">SIA - Actor 2</h4>
+                        <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">Factor conversión alimenticia</span><span class="metric-val">10%</span></div>
+                        <div class="metric-row"><span class="metric-label">Mejoras</span><span class="metric-val">O2, pH, y Nitrogenados</span></div>
+                        <div class="metric-row"><span class="metric-label">Alianzas</span><span class="metric-val">CITEs y Universidades</span></div>
+                    </div>
+                </div>
+                <div class="card"><div class="chart-container"><canvas id="barSIA"></canvas></div></div>
+                <div class="card"><div class="chart-container"><canvas id="donaSIA"></canvas></div></div>
+            </div>
+        </div>
+
+        <div id="panel-SIADE" class="sub-content">
+            <div style="margin-bottom: 20px;"><span class="actor-badge" style="background:var(--siade-light); color:var(--siade-color);">Módulo SIADE</span></div>
+            <div class="grid-2">
+                <div class="grid-3" style="grid-column: span 2;">
+                    <div class="card" style="padding:20px; border-top: 4px solid var(--siade-color);">
+                        <h4 style="color:var(--siade-color); margin-bottom:12px;">SIADE - Actor 1</h4>
+                        <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">Incremento de Productividad</span><span class="metric-val" style="color:var(--text-muted)">No sabe</span></div>
+                        <div class="metric-row"><span class="metric-label">Capacidades inv. jóvenes</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">Articulación entidades</span><span class="metric-val" style="color:var(--text-no);">NO</span></div>
+                        <div class="metric-row"><span class="metric-label">Transferencia tecnológica</span><span class="metric-val" style="color:var(--text-no);">NO</span></div>
+                    </div>
+                    <div class="card" style="padding:20px; border-top: 4px solid var(--siade-color);">
+                        <h4 style="color:var(--siade-color); margin-bottom:12px;">SIADE - Actor 2</h4>
+                        <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">Incremento de Productividad</span><span class="metric-val" style="color:var(--text-muted)">No sabe</span></div>
+                        <div class="metric-row"><span class="metric-label">Capacidades inv. jóvenes</span><span class="metric-val" style="color:var(--text-no);">NO</span></div>
+                        <div class="metric-row"><span class="metric-label">Articulación entidades</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">Transferencia tecnológica</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                    </div>
+                    <div class="card" style="padding:20px; border-top: 4px solid var(--siade-color);">
+                        <h4 style="color:var(--siade-color); margin-bottom:12px;">SIADE - Actor 3</h4>
+                        <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                        <div class="metric-row"><span class="metric-label">Incremento de Productividad</span><span class="metric-val" style="color:var(--text-muted)">No sabe</span></div>
+                        <div class="metric-row"><span class="metric-label">Capacidades inv. jóvenes</span><span class="metric-val" style="color:var(--text-parcial);">PARCIAL</span></div>
+                        <div class="metric-row"><span class="metric-label">Articulación entidades</span><span class="metric-val" style="color:var(--text-no);">NO</span></div>
+                        <div class="metric-row"><span class="metric-label">Transferencia tecnológica</span><span class="metric-val" style="color:var(--text-no);">NO</span></div>
+                    </div>
+                </div>
+                <div class="card"><div class="chart-container"><canvas id="barSIADE"></canvas></div></div>
+                <div class="card"><div class="chart-container"><canvas id="donaSIADE"></canvas></div></div>
+            </div>
+        </div>
+
+        <div id="panel-SFOCA" class="sub-content">
+            <div style="margin-bottom: 20px;"><span class="actor-badge" style="background:var(--sfoca-light); color:var(--sfoca-color);">Módulo SFOCA</span></div>
+            <div class="grid-2">
+                <div class="card" style="padding:20px; border-left: 4px solid var(--sfoca-color); height: fit-content;">
+                    <h4 style="color:var(--sfoca-color); margin-bottom:12px;">SFOCA - Actor 1</h4>
+                    <div class="metric-row"><span class="metric-label">Cumplió con el proyecto</span><span class="metric-val" style="color:var(--text-si);">SI</span></div>
+                    <div class="metric-row"><span class="metric-label">Edad de participantes</span><span class="metric-val">20-30 años</span></div>
+                    <div class="metric-row"><span class="metric-label">Inclusión de mujeres y jóvenes</span><span class="metric-val">20%</span></div>
+                    <div class="metric-row"><span class="metric-label">Alianzas</span><span class="metric-val">Universidades</span></div>
+                    <div class="metric-row"><span class="metric-label">Nº de beneficiarios</span><span class="metric-val">5-10</span></div>
+                </div>
+                <div class="card"><div class="chart-container"><canvas id="barSFOCA"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-estructuras" class="tab-panel">
+        
+        <div class="card">
+            <h2>🌿 Mapa Mental Organizado de Estructura Atomizada</h2>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Desglose radial con mapeo completo de elementos. Cada actor conecta de forma directa e independiente a cada uno de sus ítems mediante trazos vectoriales separados.</p>
+            
+            <div class="svg-container">
+                <svg viewBox="0 0 1900 1550" style="width:100%; height:auto;">
+                    
+                    <path d="M 950 775 C 800 775, 700 450, 550 450" fill="none" stroke="var(--serex-color)" stroke-width="3" opacity="0.5"/>
+                    <path d="M 950 775 C 800 775, 700 1150, 550 1150" fill="none" stroke="var(--sia-color)" stroke-width="3" opacity="0.5"/>
+                    <path d="M 950 775 C 1100 775, 1200 450, 1350 450" fill="none" stroke="var(--siade-color)" stroke-width="3" opacity="0.5"/>
+                    <path d="M 950 775 C 1100 775, 1200 1150, 1350 1150" fill="none" stroke="var(--sfoca-color)" stroke-width="3" opacity="0.5"/>
+
+                    <path d="M 550 450 C 480 450, 460 170, 380 170" fill="none" stroke="var(--serex-color)" stroke-width="1.8"/>
+                    <path d="M 550 450 C 480 450, 460 450, 380 450" fill="none" stroke="var(--serex-color)" stroke-width="1.8"/>
+                    <path d="M 550 450 C 480 450, 460 700, 380 700" fill="none" stroke="var(--serex-color)" stroke-width="1.8"/>
+                    
+                    <line x1="380" y1="170" x2="190" y2="55" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="170" x2="190" y2="105" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="170" x2="190" y2="155" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="170" x2="190" y2="205" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="170" x2="190" y2="255" stroke="#94a3b8" stroke-width="1.2"/>
+
+                    <line x1="380" y1="450" x2="190" y2="340" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="450" x2="190" y2="390" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="450" x2="190" y2="440" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="450" x2="190" y2="490" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="450" x2="190" y2="540" stroke="#94a3b8" stroke-width="1.2"/>
+
+                    <line x1="380" y1="700" x2="190" y2="590" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="700" x2="190" y2="640" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="700" x2="190" y2="690" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="700" x2="190" y2="740" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="700" x2="190" y2="790" stroke="#94a3b8" stroke-width="1.2"/>
+
+
+                    <path d="M 550 1150 C 480 1150, 460 990, 380 990" fill="none" stroke="var(--sia-color)" stroke-width="1.8"/>
+                    <path d="M 550 1150 C 480 1150, 460 1260, 380 1260" fill="none" stroke="var(--sia-color)" stroke-width="1.8"/>
+                    
+                    <line x1="380" y1="990" x2="190" y2="890" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="990" x2="190" y2="940" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="990" x2="190" y2="990" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="990" x2="190" y2="1040" stroke="#94a3b8" stroke-width="1.2"/>
+
+                    <line x1="380" y1="1260" x2="190" y2="1160" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="1260" x2="190" y2="1210" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="1260" x2="190" y2="1260" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="380" y1="1260" x2="190" y2="1310" stroke="#94a3b8" stroke-width="1.2"/>
+
+
+                    <path d="M 1350 450 C 1420 450, 1440 170, 1520 170" fill="none" stroke="var(--siade-color)" stroke-width="1.8"/>
+                    <path d="M 1350 450 C 1420 450, 1440 450, 1520 450" fill="none" stroke="var(--siade-color)" stroke-width="1.8"/>
+                    <path d="M 1350 450 C 1420 450, 1440 700, 1520 700" fill="none" stroke="var(--siade-color)" stroke-width="1.8"/>
+                    
+                    <line x1="1520" y1="170" x2="1710" y2="55" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="170" x2="1710" y2="105" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="170" x2="1710" y2="155" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="170" x2="1710" y2="205" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="170" x2="1710" y2="255" stroke="#94a3b8" stroke-width="1.2"/>
+
+                    <line x1="1520" y1="450" x2="1710" y2="340" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="450" x2="1710" y2="390" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="450" x2="1710" y2="440" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="450" x2="1710" y2="490" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="450" x2="1710" y2="540" stroke="#94a3b8" stroke-width="1.2"/>
+
+                    <line x1="1520" y1="700" x2="1710" y2="590" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="700" x2="1710" y2="640" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="700" x2="1710" y2="690" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="700" x2="1710" y2="740" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="700" x2="1710" y2="790" stroke="#94a3b8" stroke-width="1.2"/>
+
+
+                    <path d="M 1350 1150 C 1420 1150, 1440 1150, 1520 1150" fill="none" stroke="var(--sfoca-color)" stroke-width="1.8"/>
+                    
+                    <line x1="1520" y1="1150" x2="1710" y2="1000" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="1150" x2="1710" y2="1055" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="1150" x2="1710" y2="1110" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="1150" x2="1710" y2="1165" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="1520" y1="1150" x2="1710" y2="1220" stroke="#94a3b8" stroke-width="1.2"/>
+
+
+                    <rect x="860" y="745" width="180" height="60" rx="30" fill="#0f172a"/>
+                    <text x="950" y="781" text-anchor="middle" fill="white" font-weight="bold" font-size="14">RED CENTRAL</text>
+
+                    <rect x="490" y="425" width="120" height="50" rx="25" fill="var(--serex-light)" stroke="var(--serex-color)" stroke-width="2"/>
+                    <text x="550" y="456" text-anchor="middle" fill="#b91c1c" font-weight="700">SEREX</text>
+
+                    <rect x="490" y="1125" width="120" height="50" rx="25" fill="var(--sia-light)" stroke="var(--sia-color)" stroke-width="2"/>
+                    <text x="550" y="1156" text-anchor="middle" fill="#047857" font-weight="700">SIA</text>
+
+                    <rect x="1290" y="425" width="120" height="50" rx="25" fill="var(--siade-light)" stroke="var(--siade-color)" stroke-width="2"/>
+                    <text x="1350" y="456" text-anchor="middle" fill="#6b21a8" font-weight="700">SIADE</text>
+
+                    <rect x="1290" y="1125" width="120" height="50" rx="25" fill="var(--sfoca-light)" stroke="var(--sfoca-color)" stroke-width="2"/>
+                    <text x="1350" y="1156" text-anchor="middle" fill="#c2410c" font-weight="700">SFOCA</text>
+
+                    <rect x="330" y="150" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--serex-color)" stroke-width="1.5"/>
+                    <text x="380" y="174" text-anchor="middle" font-size="11" font-weight="700">Actor 1</text>
+
+                    <rect x="330" y="430" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--serex-color)" stroke-width="1.5"/>
+                    <text x="380" y="454" text-anchor="middle" font-size="11" font-weight="700">Actor 2</text>
+
+                    <rect x="330" y="680" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--serex-color)" stroke-width="1.5"/>
+                    <text x="380" y="704" text-anchor="middle" font-size="11" font-weight="700">Actor 3</text>
+
+                    <rect x="330" y="970" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--sia-color)" stroke-width="1.5"/>
+                    <text x="380" y="994" text-anchor="middle" font-size="11" font-weight="700">Actor 1</text>
+
+                    <rect x="330" y="1240" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--sia-color)" stroke-width="1.5"/>
+                    <text x="380" y="1264" text-anchor="middle" font-size="11" font-weight="700">Actor 2</text>
+
+                    <rect x="1470" y="150" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--siade-color)" stroke-width="1.5"/>
+                    <text x="1520" y="174" text-anchor="middle" font-size="11" font-weight="700">Actor 1</text>
+
+                    <rect x="1470" y="430" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--siade-color)" stroke-width="1.5"/>
+                    <text x="1520" y="454" text-anchor="middle" font-size="11" font-weight="700">Actor 2</text>
+
+                    <rect x="1470" y="680" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--siade-color)" stroke-width="1.5"/>
+                    <text x="1520" y="704" text-anchor="middle" font-size="11" font-weight="700">Actor 3</text>
+
+                    <rect x="1470" y="1130" width="100" height="40" rx="8" fill="#f8fafc" stroke="var(--sfoca-color)" stroke-width="1.5"/>
+                    <text x="1520" y="1154" text-anchor="middle" font-size="11" font-weight="700">Actor 1</text>
+
+
+                    <rect x="15" y="35" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="54" font-size="10.5" font-weight="600">Sobrevivencia: 20%</text>
+                    <rect x="15" y="85" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="104" font-size="10.5" font-weight="600">Beneficiarios: 10</text>
+                    <rect x="15" y="135" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="154" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="15" y="185" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="204" font-size="10.5" font-weight="600">Productividad: 15-20%</text>
+                    <rect x="15" y="235" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="254" font-size="10.5" font-weight="600">Crecimiento: 50%</text>
+
+                    <rect x="15" y="320" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="339" font-size="10.5" font-weight="600">Sobrevivencia: 67%</text>
+                    <rect x="15" y="370" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="389" font-size="10.5" font-weight="600">Beneficiarios: ~20</text>
+                    <rect x="15" y="420" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="439" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="15" y="470" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="489" font-size="10.5" font-weight="600">Productividad: 15-20%</text>
+                    <rect x="15" y="520" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="539" font-size="10.5" font-weight="600">Crecimiento: 65mm</text>
+
+                    <rect x="15" y="570" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="589" font-size="10.5" font-weight="600">Sobrevivencia: 100%</text>
+                    <rect x="15" y="620" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="639" font-size="10.5" font-weight="600">Beneficiarios: 10</text>
+                    <rect x="15" y="670" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="689" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="15" y="720" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="739" font-size="10.5" font-weight="600">Productividad: 0-5%</text>
+                    <rect x="15" y="770" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="789" font-size="10.5" font-weight="600">Crecimiento: 70%</text>
+
+                    <rect x="15" y="870" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="889" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="15" y="920" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="939" font-size="10.5" font-weight="600">FCR Alimentos: 15-20%</text>
+                    <rect x="15" y="970" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="989" font-size="9.5" font-weight="600">Mejoras: Lodos y Agua</text>
+                    <rect x="15" y="1020" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="1039" font-size="10.5" font-weight="600">Alianzas: Universidades</text>
+
+                    <rect x="15" y="1140" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="1159" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="15" y="1190" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="1209" font-size="10.5" font-weight="600">FCR Alimentos: 10%</text>
+                    <rect x="15" y="1240" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="1259" font-size="9" font-weight="600">Mejoras: O2, pH, Nitrogenados</text>
+                    <rect x="15" y="1290" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="25" y="1309" font-size="9.5" font-weight="600">Alianzas: CITEs y Univ.</text>
+
+
+                    <rect x="1710" y="35" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="54" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="1710" y="85" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="104" font-size="10.5" font-weight="600">Productividad: No sabe</text>
+                    <rect x="1710" y="135" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="154" font-size="10.5" font-weight="600">Inv. Jóvenes: SI</text>
+                    <rect x="1710" y="185" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="204" font-size="10.5" font-weight="600">Articulación: NO</text>
+                    <rect x="1710" y="235" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="254" font-size="10.5" font-weight="600">Transf. Tecnol: NO</text>
+
+                    <rect x="1710" y="320" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="339" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="1710" y="370" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="389" font-size="10.5" font-weight="600">Productividad: No sabe</text>
+                    <rect x="1710" y="420" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="439" font-size="10.5" font-weight="600">Inv. Jóvenes: NO</text>
+                    <rect x="1710" y="470" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="489" font-size="10.5" font-weight="600">Articulación: SI</text>
+                    <rect x="1710" y="520" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="539" font-size="10.5" font-weight="600">Transf. Tecnol: SI</text>
+
+                    <rect x="1710" y="570" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="589" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="1710" y="620" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="639" font-size="10.5" font-weight="600">Productividad: No sabe</text>
+                    <rect x="1710" y="670" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="689" font-size="10.5" font-weight="600">Inv. Jóvenes: PARCIAL</text>
+                    <rect x="1710" y="720" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="739" font-size="10.5" font-weight="600">Articulación: NO</text>
+                    <rect x="1710" y="770" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="789" font-size="10.5" font-weight="600">Transf. Tecnol: NO</text>
+
+                    <rect x="1710" y="980" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="999" font-size="10.5" font-weight="600">Cumplió Proyecto: SI</text>
+                    <rect x="1710" y="1035" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="1054" font-size="10.5" font-weight="600">Edad Rango: 20-30 años</text>
+                    <rect x="1710" y="1090" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="1109" font-size="10.5" font-weight="600">Inclusión M&J: 20%</text>
+                    <rect x="1710" y="1145" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="1164" font-size="10.5" font-weight="600">Alianzas: Universidades</text>
+                    <rect x="1710" y="1200" width="175" height="30" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="1720" y="1219" font-size="10.5" font-weight="600">Beneficiarios: 5-10</text>
+                </svg>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🗂️ Diagrama de Llaves Jerárquico Completamente Desglosado</h2>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Estructura matemática de llaves en capas sucesivas. Muestra de forma exhaustiva todos los elementos internos para cada uno de los actores de la red.</p>
+            
+            <div class="svg-container">
+                <svg viewBox="0 0 1350 1760" style="width:100%; height:auto;">
+                    
+                    <path d="M 120 40 Q 135 40 135 440 T 135 845 Q 135 850 145 850 Q 135 850 135 855 T 135 1260 Q 135 1660 120 1660" fill="none" stroke="#334155" stroke-width="2.5"/>
+                    <text x="15" y="855" font-weight="bold" font-size="15" fill="var(--primary)">Proyectos Red</text>
+
+                    <text x="160" y="445" font-weight="bold" font-size="14" fill="var(--serex-color)">SEREX</text>
+                    <path d="M 235 50 Q 250 50 250 235 T 250 420 Q 250 425 260 425 Q 250 425 250 430 T 250 615 Q 250 800 235 800" fill="none" stroke="var(--serex-color)" stroke-width="2"/>
+                    
+                    <text x="285" y="145" font-weight="700" font-size="12">Actor 1</text>
+                    <path d="M 345 40 Q 355 40 355 90 T 355 140 Q 355 143 365 143 Q 355 143 355 146 T 355 195 Q 355 245 345 245" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="385" y="60" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="385" y="100" font-size="11" fill="var(--text-main)">• % de productividad: <tspan font-weight="bold">15-20%</tspan></text>
+                    <text x="385" y="140" font-size="11" fill="var(--text-main)">• Nº de beneficiarios: <tspan font-weight="bold">10</tspan></text>
+                    <text x="385" y="180" font-size="11" fill="var(--text-main)">• Tasa de sobrevivencia: <tspan font-weight="bold">20%</tspan></text>
+                    <text x="385" y="220" font-size="11" fill="var(--text-main)">• Tasa de crecimiento: <tspan font-weight="bold">50%</tspan></text>
+
+                    <text x="285" y="430" font-weight="700" font-size="12">Actor 2</text>
+                    <path d="M 345 325 Q 355 325 355 375 T 355 425 Q 355 428 365 428 Q 355 428 355 431 T 355 480 Q 355 530 345 530" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="385" y="345" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="385" y="385" font-size="11" fill="var(--text-main)">• % de productividad: <tspan font-weight="bold">15-20%</tspan></text>
+                    <text x="385" y="425" font-size="11" fill="var(--text-main)">• Nº de beneficiarios: <tspan font-weight="bold">~20</tspan></text>
+                    <text x="385" y="465" font-size="11" fill="var(--text-main)">• Tasa de sobrevivencia: <tspan font-weight="bold">67%</tspan></text>
+                    <text x="385" y="505" font-size="11" fill="var(--text-main)">• Tasa de crecimiento: <tspan font-weight="bold">65mm</tspan></text>
+
+                    <text x="285" y="700" font-weight="700" font-size="12">Actor 3</text>
+                    <path d="M 345 595 Q 355 595 355 645 T 355 695 Q 355 698 365 698 Q 355 698 355 701 T 355 750 Q 355 800 345 800" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="385" y="615" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="385" y="655" font-size="11" fill="var(--text-main)">• % de productividad: <tspan font-weight="bold">0-5%</tspan></text>
+                    <text x="385" y="695" font-size="11" fill="var(--text-main)">• Nº de beneficiarios: <tspan font-weight="bold">10</tspan></text>
+                    <text x="385" y="735" font-size="11" fill="var(--text-main)">• Tasa de sobrevivencia: <tspan font-weight="bold">100%</tspan></text>
+                    <text x="385" y="775" font-size="11" fill="var(--text-main)">• Tasa de crecimiento: <tspan font-weight="bold">70%</tspan></text>
+
+
+                    <text x="160" y="1055" font-weight="bold" font-size="14" fill="var(--sia-color)">SIA</text>
+                    <path d="M 235 855 Q 250 855 250 965 T 250 1050 Q 250 1055 260 1055 Q 250 1055 250 1060 T 250 1145 Q 250 1255 235 1255" fill="none" stroke="var(--sia-color)" stroke-width="2"/>
+                    
+                    <text x="285" y="960" font-weight="700" font-size="12">Actor 1</text>
+                    <path d="M 345 880 Q 355 880 355 920 T 355 955 Q 355 958 365 958 Q 355 958 355 961 T 355 995 Q 355 1035 345 1035" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="385" y="900" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="385" y="940" font-size="11" fill="var(--text-main)">• Factor conversión alimenticia: <tspan font-weight="bold">15-20%</tspan></text>
+                    <text x="385" y="980" font-size="11" fill="var(--text-main)">• Mejoras: <tspan font-weight="bold">Lodos y parámetros de agua</tspan></text>
+                    <text x="385" y="1020" font-size="11" fill="var(--text-main)">• Alianzas: <tspan font-weight="bold">Universidades</tspan></text>
+
+                    <text x="285" y="1170" font-weight="700" font-size="12">Actor 2</text>
+                    <path d="M 345 1090 Q 355 1090 355 1130 T 355 1165 Q 355 1168 365 1168 Q 355 1168 355 1171 T 355 1205 Q 355 1245 345 1245" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="385" y="1110" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="385" y="1150" font-size="11" fill="var(--text-main)">• Factor conversión alimenticia: <tspan font-weight="bold">10%</tspan></text>
+                    <text x="385" y="1190" font-size="11" fill="var(--text-main)">• Mejoras: <tspan font-weight="bold">O2, pH, y nitrogenados</tspan></text>
+                    <text x="385" y="1230" font-size="11" fill="var(--text-main)">• Alianzas: <tspan font-weight="bold">CITEs y Universidades</tspan></text>
+
+
+                    <text x="800" y="445" font-weight="bold" font-size="14" fill="var(--siade-color)">SIADE</text>
+                    <path d="M 875 50 Q 890 50 890 235 T 890 420 Q 890 425 900 425 Q 890 425 890 430 T 890 615 Q 890 800 875 800" fill="none" stroke="var(--siade-color)" stroke-width="2"/>
+                    
+                    <text x="925" y="145" font-weight="700" font-size="12">Actor 1</text>
+                    <path d="M 985 40 Q 995 40 995 90 T 995 140 Q 995 143 1005 143 Q 995 143 995 146 T 995 195 Q 995 245 985 245" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="1025" y="60" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="1025" y="100" font-size="11" fill="var(--text-main)">• Productividad: <tspan fill="var(--text-muted)">No sabe</tspan></text>
+                    <text x="1025" y="140" font-size="11" fill="var(--text-main)">• Capacidades inv. jóvenes: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="1025" y="180" font-size="11" fill="var(--text-main)">• Articulación entidades: <tspan font-weight="bold" fill="var(--text-no)">NO</tspan></text>
+                    <text x="1025" y="220" font-size="11" fill="var(--text-main)">• Transferencia tecnológica: <tspan font-weight="bold" fill="var(--text-no)">NO</tspan></text>
+
+                    <text x="925" y="430" font-weight="700" font-size="12">Actor 2</text>
+                    <path d="M 985 325 Q 995 325 995 375 T 995 425 Q 995 428 1005 428 Q 995 428 995 431 T 995 480 Q 995 530 985 530" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="1025" y="345" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="1025" y="385" font-size="11" fill="var(--text-main)">• Productividad: <tspan fill="var(--text-muted)">No sabe</tspan></text>
+                    <text x="1025" y="425" font-size="11" fill="var(--text-main)">• Capacidades inv. jóvenes: <tspan font-weight="bold" fill="var(--text-no)">NO</tspan></text>
+                    <text x="1025" y="465" font-size="11" fill="var(--text-main)">• Articulación entidades: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="1025" y="505" font-size="11" fill="var(--text-main)">• Transferencia tecnológica: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+
+                    <text x="925" y="700" font-weight="700" font-size="12">Actor 3</text>
+                    <path d="M 985 595 Q 995 595 995 645 T 995 695 Q 995 698 1005 698 Q 995 698 995 701 T 995 750 Q 995 800 985 800" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="1025" y="615" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="1025" y="655" font-size="11" fill="var(--text-main)">• Productividad: <tspan fill="var(--text-muted)">No sabe</tspan></text>
+                    <text x="1025" y="695" font-size="11" fill="var(--text-main)">• Capacidades inv. jóvenes: <tspan font-weight="bold" fill="var(--text-parcial);">PARCIAL</tspan></text>
+                    <text x="1025" y="735" font-size="11" fill="var(--text-main)">• Articulación entidades: <tspan font-weight="bold" fill="var(--text-no)">NO</tspan></text>
+                    <text x="1025" y="775" font-size="11" fill="var(--text-main)">• Transferencia tecnológica: <tspan font-weight="bold" fill="var(--text-no)">NO</tspan></text>
+
+
+                    <text x="800" y="1055" font-weight="bold" font-size="14" fill="var(--sfoca-color)">SFOCA</text>
+                    <path d="M 875 880 Q 890 880 890 980 T 890 1040 Q 890 1045 900 1045 Q 890 1045 890 1050 T 890 1110 Q 890 1210 875 1210" fill="none" stroke="var(--sfoca-color)" stroke-width="2"/>
+                    
+                    <text x="925" y="1050" font-weight="700" font-size="12">Actor 1</text>
+                    <path d="M 985 940 Q 995 940 995 990 T 995 1040 Q 995 1043 1005 1043 Q 995 1043 995 1046 T 995 1095 Q 995 1145 985 1145" fill="none" stroke="#64748b" stroke-width="1.2"/>
+                    <text x="1025" y="960" font-size="11" fill="var(--text-main)">• Cumplió con el proyecto: <tspan font-weight="bold" fill="var(--text-si)">SI</tspan></text>
+                    <text x="1025" y="1000" font-size="11" fill="var(--text-main)">• Edad de participantes: <tspan font-weight="bold">20-30 años</tspan></text>
+                    <text x="1025" y="1040" font-size="11" fill="var(--text-main)">• Inclusión de mujeres/jóvenes: <tspan font-weight="bold">20%</tspan></text>
+                    <text x="1025" y="1080" font-size="11" fill="var(--text-main)">• Alianzas: <tspan font-weight="bold">Universidades</tspan></text>
+                    <text x="1025" y="1120" font-size="11" fill="var(--text-main)">• Nº de beneficiarios: <tspan font-weight="bold">5-10</tspan></text>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Controlador de Navegación Principal
+        function switchMainTab(panelId) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(panelId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        // Controlador de Navegación Módulos Internos
+        function switchSubTab(subCode) {
+            document.querySelectorAll('#vista-subproyectos .sub-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('#vista-subproyectos .sub-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById('panel-' + subCode).classList.add('active');
+            event.currentTarget.classList.add('active');
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        // GRÁFICOS PESTAÑA VISTA GLOBAL COMPARATIVA
+        new Chart(document.getElementById('barBeneficiariosCorrecto').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['SEREX', 'SIA', 'SIADE', 'SFOCA'],
+                datasets: [{
+                    label: 'Suma de Beneficiarios',
+                    data: [40, 0, 0, 7.5], 
+                    backgroundColor: ['#ef4444', '#cbd5e1', '#cbd5e1', '#f97316'],
+                    borderRadius: 6
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        new Chart(document.getElementById('doughnutCumplimiento').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ['SEREX (100%)', 'SIA (100%)', 'SIADE (100%)', 'SFOCA (100%)'],
+                datasets: [{
+                    data: [100, 100, 100, 100],
+                    backgroundColor: ['#fca5a5', '#6ee7b7', '#c084fc', '#fdba74']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // GRÁFICOS INTERNOS DE SUBPROYECTOS
+        new Chart(document.getElementById('barSEREX').getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['Actor 1', 'Actor 2', 'Actor 3'], datasets: [{ label: 'Tasa de Sobrevivencia %', data: [20, 67, 100], backgroundColor: 'var(--serex-color)' }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        new Chart(document.getElementById('donaSEREX').getContext('2d'), {
+            type: 'doughnut',
+            data: { labels: ['Actor 1', 'Actor 2', 'Actor 3'], datasets: [{ data: [10, 20, 10], backgroundColor: ['#b91c1c', '#ef4444', '#fca5a5'] }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        new Chart(document.getElementById('barSIA').getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['Actor 1', 'Actor 2'], datasets: [{ label: 'FCR %', data: [18, 10], backgroundColor: 'var(--sia-color)' }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        new Chart(document.getElementById('donaSIA').getContext('2d'), {
+            type: 'pie',
+            data: { labels: ['Actor 1', 'Actor 2'], datasets: [{ data: [50, 50], backgroundColor: ['#047857', '#34d399'] }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        new Chart(document.getElementById('barSIADE').getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['Actor 1', 'Actor 2', 'Actor 3'], datasets: [{ label: 'Nivel Articulación', data: [10, 90, 10], backgroundColor: 'var(--siade-color)' }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        new Chart(document.getElementById('donaSIADE').getContext('2d'), {
+            type: 'doughnut',
+            data: { labels: ['Cumplimiento', 'Brecha'], datasets: [{ data: [70, 30], backgroundColor: ['#6b21a8', '#e9d5ff'] }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        new Chart(document.getElementById('barSFOCA').getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['Mínimo', 'Máximo'], datasets: [{ label: 'Beneficiarios Estimados', data: [5, 10], backgroundColor: 'var(--sfoca-color)' }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    </script>
+</body>
+</html>
