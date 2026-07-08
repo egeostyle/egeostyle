@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÁLBUM MUNDIAL 2026</title>
+    <meta name="checklist-user" content="Invitado">
+    <meta name="checklist-timestamp" content="">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #5c061f; /* Color guinda FIFA */
+            --tengo-color: #2ecc71;
+            --repetida-color: #e74c3c;
+            --falta-color: #bdc3c7;
+            --info-color: #f39c12;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px 20px 90px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary-color), #8a0f2e);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0 0 10px 0; font-size: 1.8rem; }
+        .subtitle { font-size: 1rem; opacity: 0.9; }
+
+        /* Panel de Gestión mediante QR principal */
+        .upload-zone {
+            background: #eef2f5;
+            border: 2px dashed #bdc3c7;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn-upload-label {
+            background-color: #7f8c8d;
+            color: white;
+            padding: 12px 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            white-space: nowrap;
+            transition: background 0.2s;
+            border: none;
+        }
+        .btn-upload-label:hover { background-color: #95a5a6; }
+        .btn-upload-label.compare { background-color: var(--info-color); }
+        .btn-upload-label.compare:hover { background-color: #e67e22; }
+
+        /* Modales (Cámara y Visor QR) */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .modal-content-box {
+            background: white;
+            color: #333;
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .modal-content-box h3 { margin-top: 0; margin-bottom: 15px; color: var(--primary-color); }
+        
+        #reader {
+            width: 100%;
+            max-width: 300px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Contenedor específico del QR optimizado */
+        .qr-display-zone {
+            margin: 15px 0;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        .qr-display-zone img { display: block; }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 15px;
+        }
+        .btn-modal {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn-modal.primary { flex: 2; background-color: var(--tengo-color); color: white; }
+        .btn-modal.secondary { flex: 2; background-color: #7f8c8d; color: white; }
+        .btn-modal.danger { background-color: var(--repetida-color); color: white; }
+        .btn-modal.info-btn { background-color: #34495e; color: white; }
+        .btn-modal.info-btn:hover { background-color: #2c3e50; }
+        
+        /* Botón de compartir circular */
+        .btn-modal.share-icon-btn {
+            flex: 1;
+            background-color: #2980b9;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-modal.share-icon-btn:hover { background-color: #3498db; }
+        .btn-modal.share-icon-btn svg { display: block; }
+
+        /* Panel de Resultados de Comparación */
+        .comparison-results {
+            background: #ffffff;
+            border: 1px solid #dcdde1;
+            color: #2f3640;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: none;
+        }
+        .comparison-results h3 { 
+            margin-top: 0; 
+            margin-bottom: 12px;
+            color: var(--primary-color); 
+            font-size: 1.1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 6px;
+        }
+        .comparison-results ul { margin: 0 0 15px 0; padding-left: 20px; }
+        .comparison-results li { margin-bottom: 8px; font-size: 0.9rem; line-height: 1.4; }
+        .btn-close-compare {
+            background-color: #f5f6fa;
+            border: 1px solid #c2c2c2;
+            color: #333;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-close-compare:hover { background-color: #dcdde1; }
+
+        /* Panel de Control de Estadísticas */
+        .dashboard-controls {
+            background: var(--card-bg);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .stats {
+            display: flex;
+            flex-direction: row !important;
+            justify-content: space-between;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .stat-box {
+            flex: 1;
+            padding: 10px 4px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.85rem;
+            border: 1px solid #ddd;
+            white-space: nowrap;
+        }
+        .stat-box.tengo { background-color: rgba(46, 204, 113, 0.15); color: #27ae60; border-color: rgba(46, 204, 113, 0.3); }
+        .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
+        .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
+
+        /* Botonera Flotante Fija Inferior */
+        .floating-action-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            width: calc(100% - 60px);
+            max-width: 400px;
+            justify-content: center;
+        }
+
+        .btn {
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-download { background-color: #2980b9; }
+        .btn-pdf { background-color: #27ae60; }
+
+        /* Estructura Adaptativa */
+        .countries-container { display: flex; flex-direction: column; gap: 20px; }
+        @media screen and (min-width: 992px) {
+            .countries-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        }
+
+        .country-card { background: var(--card-bg); border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .country-title { font-size: 1.05rem; font-weight: bold; margin: 0 0 12px 0; padding-bottom: 4px; border-bottom: 3px solid var(--primary-color); color: var(--primary-color); display: inline-block; }
+        
+        .stickers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 6px; }
+        .sticker {
+            background-color: #f0f3f5;
+            border: 2px solid #dcdde1;
+            border-radius: 6px;
+            padding: 10px 4px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+        .sticker.state-tengo { background-color: var(--tengo-color) !important; border-color: #27ae60; color: white; }
+        .sticker.state-repetida { background-color: var(--repetida-color) !important; border-color: #c0392b; color: white; }
+
+        .instructions { font-size: 0.8rem; color: #666; text-align: center; margin-bottom: 15px; }
+        
+        #qr-file-input { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="main-title">ÁLBUM MUNDIAL 2026</h1>
+        <div class="subtitle" id="main-subtitle">Checklist de figuras</div>
+        <div id="user-tag" style="font-size:0.85rem; margin-top:5px; font-style:italic; opacity:0.8;"></div>
+    </header>
+
+    <div class="upload-zone">
+        <button class="btn-upload-label" onclick="abrirCamara(false)">📸 Escanear Mi QR</button>
+        <button class="btn-upload-label compare" onclick="abrirCamara(true)">📸 Comparar Álbum</button>
+    </div>
+
+    <div id="camera-modal" class="custom-modal">
+        <div class="modal-content-box" style="background: #333; color: white;">
+            <h3 id="camera-modal-title" style="color: white; margin-bottom:15px;">Escanear Código QR</h3>
+            <div id="reader"></div>
+            
+            <button class="btn-modal info-btn" onclick="document.getElementById('qr-file-input').click()" style="margin-top:20px; width:100%;">
+                📁 Subir QR desde mi dispositivo
+            </button>
+            <input type="file" id="qr-file-input" accept="image/*" onchange="procesarQRDesdeArchivo(event)">
+
+            <button class="btn-modal danger" onclick="cerrarCamara()" style="margin-top:10px; width:100%;">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="qr-view-modal" class="custom-modal">
+        <div class="modal-content-box">
+            <h3>Tu Código QR</h3>
+            <p id="qr-meta-details" style="font-size:0.85rem; color:#444; font-weight: bold; margin: 0 0 10px 0; line-height: 1.4;"></p>
+            <div id="qr-display" class="qr-display-zone"></div>
+            <div class="modal-actions">
+                <button class="btn-modal primary" onclick="forzarDescargaQR()">Descargar</button>
+                <button class="btn-modal share-icon-btn" onclick="compartirQR()" title="Compartir">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">  <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5m-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"/></svg>
+                </button>
+                <button class="btn-modal secondary" onclick="cerrarModalQR()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="comparison-results" id="compare-box">
+        <h3>Resultados de intercambio</h3>
+        <div id="compare-info" style="margin-bottom: 14px; font-size: 0.95rem; color: #2f3640; line-height: 1.6;"></div>
+        <ul>
+            <li><strong>Figuritas que tu amigo te puede dar:</strong> <span id="te-da">- Ninguna -</span></li>
+            <li><strong>Figuritas que tú le puedes dar:</strong> <span id="le-das">- Ninguna -</span></li>
+        </ul>
+        <button class="btn-close-compare" onclick="cerrarComparacion()">Cerrar Resultados</button>
+    </div>
+
+    <div class="dashboard-controls">
+        <div class="stats">
+            <div class="stat-box tengo">Tengo: <span id="count-tengo">0</span></div>
+            <div class="stat-box repetida">Repetidas: <span id="count-rep">0</span></div>
+            <div class="stat-box falta">Faltan: <span id="count-falta">0</span></div>
+        </div>
+    </div>
+    
+    <div class="instructions">💡 <i>Modo de uso: Un toque cambia de estado ( Blanco ➡️ Verde ➡️ Rojo ➡️ Blanco )</i></div>
+
+    <div class="floating-action-container">
+        <button class="btn btn-download" onclick="procesarYMostrarQR()">💾 Guardar QR</button>
+        <button class="btn btn-pdf" onclick="exportarPDF()">📄 Exportar a PDF</button>
+    </div>
+
+    <div class="countries-container" id="main-container"></div>
+
+    <script>
+        const albumData = [
+            { country: "Especiales (FWC)", prefix: "FWC", count: 19 },
+            { country: "México (MEX)", prefix: "MEX", count: 20 },
+            { country: "Sudáfrica (RSA)", prefix: "RSA", count: 20 },
+            { country: "Corea del Sur (KOR)", prefix: "KOR", count: 20 },
+            { country: "República Checa (CZE)", prefix: "CZE", count: 20 },
+            { country: "Canadá (CAN)", prefix: "CAN", count: 20 },
+            { country: "Bosnia y Herzegovina (BIH)", prefix: "BIH", count: 20 },
+            { country: "Catar (QAT)", prefix: "QAT", count: 20 },
+            { country: "Suiza (SUI)", prefix: "SUI", count: 20 },
+            { country: "Brasil (BRA)", prefix: "BRA", count: 20 },
+            { country: "Marruecos (MAR)", prefix: "MAR", count: 20 },
+            { country: "Haití (HAI)", prefix: "HAI", count: 20 },
+            { country: "Escocia (SCO)", prefix: "SCO", count: 20 },
+            { country: "Estados Unidos (USA)", prefix: "USA", count: 20 },
+            { country: "Paraguay (PAR)", prefix: "PAR", count: 20 },
+            { country: "Australia (AUS)", prefix: "AUS", count: 20 },
+            { country: "Turquía (TUR)", prefix: "TUR", count: 20 },
+            { country: "Alemania (GER)", prefix: "GER", count: 20 },
+            { country: "Curazao (CUW)", prefix: "CUW", count: 20 },
+            { country: "Costa de Marfil (CIV)", prefix: "CIV", count: 20 },
+            { country: "Ecuador (ECU)", prefix: "ECU", count: 20 },
+            { country: "Países Bajos (NED)", prefix: "NED", count: 20 },
+            { country: "Japón (JPN)", prefix: "JPN", count: 20 },
+            { country: "Suecia (SWE)", prefix: "SWE", count: 20 },
+            { country: "Túnez (TUN)", prefix: "TUN", count: 20 },
+            { country: "Bélgica (BEL)", prefix: "BEL", count: 20 },
+            { country: "Egipto (EGY)", prefix: "EGY", count: 20 },
+            { country: "Irán (IRN)", prefix: "IRN", count: 20 },
+            { country: "Nueva Zelanda (NZL)", prefix: "NZL", count: 20 },
+            { country: "España (ESP)", prefix: "ESP", count: 20 },
+            { country: "Cabo Verde (CPV)", prefix: "CPV", count: 20 },
+            { country: "Arabia Saudita (KSA)", prefix: "KSA", count: 20 },
+            { country: "Uruguay (URU)", prefix: "URU", count: 20 },
+            { country: "Francia (FRA)", prefix: "FRA", count: 20 },
+            { country: "Senegal (SEN)", prefix: "SEN", count: 20 },
+            { country: "Irak (IRQ)", prefix: "IRQ", count: 20 },
+            { country: "Noruega (NOR)", prefix: "NOR", count: 20 },
+            { country: "Argentina (ARG)", prefix: "ARG", count: 20 },
+            { country: "Argelia (ALG)", prefix: "ALG", count: 20 },
+            { country: "Austria (AUT)", prefix: "AUT", count: 20 },
+            { country: "Jordania (JOR)", prefix: "JOR", count: 20 },
+            { country: "Portugal (POR)", prefix: "POR", count: 20 },
+            { country: "Rep. Dem. del Congo (COD)", prefix: "COD", count: 20 },
+            { country: "Uzbekistán (UZB)", prefix: "UZB", count: 20 },
+            { country: "Colombia (COL)", prefix: "COL", count: 20 },
+            { country: "Inglaterra (ENG)", prefix: "ENG", count: 20 },
+            { country: "Croacia (CRO)", prefix: "CRO", count: 20 },
+            { country: "Ghana (GHA)", prefix: "GHA", count: 20 },
+            { country: "Panamá (PAN)", prefix: "PAN", count: 20 },
+            { country: "Coca Cola (CC)", prefix: "CC", count: 14 }
+        ];
+
+        const container = document.getElementById('main-container');
+        let html5QrcodeScanner = null;
+        let esModoComparacionGlobal = false;
+        let nombreUsuarioDescarga = "usuario";
+        let ultimoTextoQRGenerado = "";
+
+        function inicializarStickers() {
+            if (container.children.length === 0) {
+                albumData.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'country-card';
+                    const title = document.createElement('div');
+                    title.className = 'country-title';
+                    title.innerText = item.country;
+                    card.appendChild(title);
+
+                    const grid = document.createElement('div');
+                    grid.className = 'stickers-grid';
+
+                    for (let i = 1; i <= item.count; i++) {
+                        const sticker = document.createElement('div');
+                        sticker.className = 'sticker';
+                        sticker.id = `st-${item.prefix}-${i}`;
+                        sticker.innerText = `${item.prefix}${i}`;
+                        sticker.setAttribute('data-state', '0'); 
+                        
+                        sticker.addEventListener('click', function() {
+                            let currentState = parseInt(sticker.getAttribute('data-state')) || 0;
+                            let nextState = (currentState + 1) % 3;
+                            setStickerState(sticker, nextState);
+                        });
+                        grid.appendChild(sticker);
+                    }
+                    card.appendChild(grid);
+                    container.appendChild(card);
+                });
+            }
+            mostrarMetadatosPantalla();
+        }
+
+        function setStickerState(element, state) {
+            element.setAttribute('data-state', state);
+            element.classList.remove('state-tengo', 'state-repetida');
+            if (state === 1) element.classList.add('state-tengo');
+            if (state === 2) element.classList.add('state-repetida');
+            actualizarContadores();
+        }
+
+        function actualizarContadores() {
+            const totalStickers = document.querySelectorAll('.sticker').length;
+            const tengo = document.querySelectorAll('.sticker[data-state="1"]').length + document.querySelectorAll('.sticker[data-state="2"]').length;
+            const repetidas = document.querySelectorAll('.sticker[data-state="2"]').length;
+            const faltan = totalStickers - tengo;
+
+            document.getElementById('count-tengo').innerText = tengo;
+            document.getElementById('count-rep').innerText = repetidas;
+            document.getElementById('count-falta').innerText = faltan;
+        }
+
+        function mostrarMetadatosPantalla() {
+            const usuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content');
+            const fecha = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content');
+            if(fecha) {
+                const fechaFormat = new Date(parseInt(fecha)).toLocaleString();
+                document.getElementById('user-tag').innerText = `Usuario: ${usuario} | Último guardado: ${fechaFormat}`;
+            } else {
+                document.getElementById('user-tag').innerText = `Usuario: ${usuario}`;
+            }
+        }
+
+        // 🗜️ COMPRESIÓN BASE36
+        function comprimirEstados(cadenaEstados) {
+            let resultadoCompreso = "";
+            for (let i = 0; i < cadenaEstados.length; i += 5) {
+                let bloque = cadenaEstados.substring(i, i + 5);
+                let valorDecimal = parseInt(bloque, 3);
+                resultadoCompreso += valorDecimal.toString(36) + ".";
+            }
+            return resultadoCompreso.slice(0, -1);
+        }
+
+        function descomprimirEstados(stringCompreso) {
+            let partes = stringCompreso.split('.');
+            let cadenaOriginal = "";
+            partes.forEach(p => {
+                let valorDecimal = parseInt(p, 36);
+                let ternario = valorDecimal.toString(3);
+                while (ternario.length < 5) ternario = "0" + ternario;
+                cadenaOriginal += ternario;
+            });
+            return cadenaOriginal;
+        }
+
+        function procesarYMostrarQR() {
+            let nombreUsuario = prompt("Introduce tu nombre:", "");
+            if (nombreUsuario === null) return; 
+            nombreUsuario = nombreUsuario.trim() || "Invitado";
+            nombreUsuarioDescarga = nombreUsuario;
+
+            const timestampReducido = Date.now();
+            const fechaFormateada = new Date(timestampReducido).toLocaleString();
+
+            document.querySelector('meta[name="checklist-user"]').setAttribute('content', nombreUsuario);
+            document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', timestampReducido);
+
+            let cadenaEstadosPuros = "";
+            document.querySelectorAll('.sticker').forEach(st => {
+                cadenaEstadosPuros += (st.getAttribute('data-state') || '0');
+            });
+
+            const mapaCompactado = comprimirEstados(cadenaEstadosPuros);
+            ultimoTextoQRGenerado = `${nombreUsuario}|${timestampReducido}|${mapaCompactado}`;
+
+            document.getElementById('qr-meta-details').innerText = `Usuario: ${nombreUsuario}\nFecha: ${fechaFormateada}`;
+
+            const displayZone = document.getElementById('qr-display');
+            displayZone.innerHTML = "";
+            
+            new QRCode(displayZone, {
+                text: ultimoTextoQRGenerado,
+                width: 240,
+                height: 240,
+                correctLevel: QRCode.CorrectLevel.L
+            });
+
+            document.getElementById('qr-view-modal').style.display = 'flex';
+        }
+
+        async function compartirQR() {
+            const imgElement = document.getElementById('qr-display').querySelector('img');
+            if (!imgElement) return;
+
+            try {
+                const response = await fetch(imgElement.src);
+                const blob = await response.blob();
+                const file = new File([blob], `${nombreUsuarioDescarga}-album.png`, { type: 'image/png' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Mi Álbum Mundial 2026',
+                        text: `¡Mira el progreso de mi álbum!`
+                    });
+                } else if (navigator.share) {
+                    await navigator.share({
+                        title: 'Mi Progreso Álbum',
+                        text: ultimoTextoQRGenerado
+                    });
+                } else {
+                    throw new Error("No compatible");
+                }
+            } catch (err) {
+                navigator.clipboard.writeText(ultimoTextoQRGenerado);
+                alert("Hemos copiado los datos de tu QR al portapapeles.");
+            }
+        }
+
+        function forzarDescargaQR() {
+            const imgElement = document.getElementById('qr-display').querySelector('img');
+            if(imgElement) {
+                const link = document.createElement("a");
+                link.href = imgElement.src;
+                link.download = `${nombreUsuarioDescarga.toLowerCase().replace(/[^a-z0-9]/g, "-")}-qr.png`;
+                link.click();
+                cerrarModalQR();
+                mostrarMetadatosPantalla();
+            }
+        }
+
+        function cerrarModalQR() { document.getElementById('qr-view-modal').style.display = 'none'; }
+
+        function abrirCamara(esComparacion) {
+            esModoComparacionGlobal = esComparacion;
+            const tituloModal = document.getElementById('camera-modal-title');
+            tituloModal.innerText = esComparacion ? "Comparar Álbum (Escanear o Subir)" : "Escanear Mi Código QR";
+            
+            document.getElementById('camera-modal').style.display = 'flex';
+            
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                fps: 15, 
+                qrbox: { width: 220, height: 220 } 
+            }, false);
+            
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function cerrarCamara() {
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    document.getElementById('camera-modal').style.display = 'none';
+                }).catch(() => {
+                    document.getElementById('camera-modal').style.display = 'none';
+                });
+            } else {
+                document.getElementById('camera-modal').style.display = 'none';
+            }
+        }
+
+        function procesarQRDesdeArchivo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const html5QrCode = new Html5Qrcode("reader");
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    escanearArchivoEstatico(html5QrCode, file);
+                }).catch(() => {
+                    escanearArchivoEstatico(html5QrCode, file);
+                });
+            } else {
+                escanearArchivoEstatico(html5QrCode, file);
+            }
+        }
+
+        function escanearArchivoEstatico(lector, archivo) {
+            lector.scanFile(archivo, true)
+                .then(decodedText => {
+                    document.getElementById('qr-file-input').value = ""; 
+                    document.getElementById('camera-modal').style.display = 'none'; 
+                    onScanSuccess(decodedText); 
+                })
+                .catch(err => {
+                    alert("No se pudo detectar un código QR válido en la imagen. Asegúrate de que la captura se vea nítida.");
+                    document.getElementById('qr-file-input').value = "";
+                });
+        }
+
+        function onScanSuccess(decodedText) {
+            if(document.getElementById('camera-modal').style.display !== 'none') {
+                 document.getElementById('camera-modal').style.display = 'none';
+            }
+            
+            const partes = decodedText.split('|');
+            if(partes.length !== 3) {
+                alert("QR corrupto o no compatible.");
+                return;
+            }
+
+            let qrUsuario = partes[0].trim();
+            const qrTimestamp = partes[1];
+            const cadenaEstados = descomprimirEstados(partes[2]);
+            const misStickers = document.querySelectorAll('.sticker');
+
+            if (!esModoComparacionGlobal) {
+                document.querySelector('meta[name="checklist-user"]').setAttribute('content', qrUsuario);
+                document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', qrTimestamp);
+
+                misStickers.forEach((miSticker, indice) => {
+                    if(indice < cadenaEstados.length) {
+                        setStickerState(miSticker, parseInt(cadenaEstados.charAt(indice)));
+                    }
+                });
+                mostrarMetadatosPantalla();
+                alert(`¡Progreso de ${qrUsuario} cargado correctamente!`);
+            } else {
+                // LÓGICA DE COMPARACIÓN CORREGIDA Y PERSONALIZADA
+                let miUsuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Invitado";
+                const miTimestamp = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content') || "";
+                
+                let lineaMiUsuario = "";
+                if (miUsuario === "Invitado") {
+                    const ahora = new Date().toLocaleString();
+                    lineaMiUsuario = `• <strong>Tú:</strong> ${ahora} <span style="color:#e74c3c; font-size:0.85rem; font-weight:normal;">( datos no guardados, recuerda guardar tu progreso antes de salir )</span>`;
+                } else {
+                    const miFechaFormat = miTimestamp ? new Date(parseInt(miTimestamp)).toLocaleString() : new Date().toLocaleString();
+                    lineaMiUsuario = `• <strong>${miUsuario}:</strong> Guardado el ${miFechaFormat}`;
+                }
+
+                let lineaAmigo = "";
+                const amigoFechaFormat = new Date(parseInt(qrTimestamp)).toLocaleString();
+                if (qrUsuario === "Invitado") {
+                    lineaAmigo = `• <strong>Tú (Amigo):</strong> Guardado el ${amigoFechaFormat}`;
+                } else {
+                    lineaAmigo = `• <strong>${qrUsuario}:</strong> Guardado el ${amigoFechaFormat}`;
+                }
+
+                let teDa = [];
+                let leDas = [];
+
+                misStickers.forEach((miSticker, indice) => {
+                    if(indice < cadenaEstados.length) {
+                        const miEstado = parseInt(miSticker.getAttribute('data-state')) || 0;
+                        const amigoEstado = parseInt(cadenaEstados.charAt(indice));
+                        const codigoFigurita = miSticker.innerText;
+
+                        if (amigoEstado === 2 && miEstado === 0) teDa.push(codigoFigurita);
+                        if (miEstado === 2 && amigoEstado === 0) leDas.push(codigoFigurita);
+                    }
+                });
+
+                document.getElementById('compare-info').innerHTML = `
+                    ${lineaMiUsuario}<br>
+                    ${lineaAmigo}
+                `;
+                
+                document.getElementById('te-da').innerText = teDa.length > 0 ? teDa.join(', ') : 'Ninguna.';
+                document.getElementById('le-das').innerText = leDas.length > 0 ? leDas.join(', ') : 'Ninguna.';
+                document.getElementById('compare-box').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function onScanFailure() {}
+        function cerrarComparacion() { document.getElementById('compare-box').style.display = 'none'; }
+        function exportarPDF() { window.print(); }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarStickers();
+            actualizarContadores();
+        });
+    </script>
+</body>
+</html>
