@@ -111,7 +111,7 @@
             overflow: hidden;
         }
 
-        /* Contenedor específico del QR optimizado */
+        /* Contenedor del QR optimizado */
         .qr-display-zone {
             margin: 15px 0;
             padding: 10px;
@@ -119,7 +119,15 @@
             border: 1px solid #eee;
             border-radius: 8px;
         }
-        .qr-display-zone img { display: block; }
+        /* Forzamos que la imagen generada sea visible y táctil */
+        .qr-display-zone img { 
+            display: block !important; 
+            width: 240px; 
+            height: 240px; 
+            user-select: auto !important;
+            -webkit-user-select: auto !important;
+        }
+        .qr-display-zone canvas { display: none !important; }
 
         .modal-actions {
             display: flex;
@@ -128,30 +136,29 @@
             margin-top: 15px;
         }
         .btn-modal {
-            padding: 10px;
+            padding: 12px;
             border: none;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
-        .btn-modal.primary { flex: 2; background-color: var(--tengo-color); color: white; }
         .btn-modal.secondary { flex: 2; background-color: #7f8c8d; color: white; }
         .btn-modal.danger { background-color: var(--repetida-color); color: white; }
         .btn-modal.info-btn { background-color: #34495e; color: white; }
         .btn-modal.info-btn:hover { background-color: #2c3e50; }
         
-        /* Botón de compartir circular */
+        /* Botón de compartir interactivo */
         .btn-modal.share-icon-btn {
-            flex: 1;
+            flex: 2;
             background-color: #2980b9;
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
         }
         .btn-modal.share-icon-btn:hover { background-color: #3498db; }
-        .btn-modal.share-icon-btn svg { display: block; }
 
         /* Panel de Resultados de Comparación */
         .comparison-results {
@@ -313,12 +320,18 @@
     <div id="qr-view-modal" class="custom-modal">
         <div class="modal-content-box">
             <h3>Tu Código QR</h3>
-            <p id="qr-meta-details" style="font-size:0.85rem; color:#444; font-weight: bold; margin: 0 0 10px 0; line-height: 1.4;"></p>
+            <p id="qr-meta-details" style="font-size:0.85rem; color:#444; font-weight: bold; margin: 0; line-height: 1.4;"></p>
+            
+            <p style="font-size:0.8rem; color:#7f8c8d; margin: 8px 0 5px 0; padding: 0 10px; font-style: italic; font-weight: 500;">
+                Para <strong>guardar el QR</strong>, mantén presionada la imagen para que puedas guardarla en tu dispositivo.
+            </p>
+
             <div id="qr-display" class="qr-display-zone"></div>
+            
             <div class="modal-actions">
-                <button class="btn-modal primary" onclick="forzarDescargaQR()">Descargar</button>
-                <button class="btn-modal share-icon-btn" onclick="compartirQR()" title="Compartir">
+                <button class="btn-modal share-icon-btn" onclick="compartirQR()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">  <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5m-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"/></svg>
+                    Compartir
                 </button>
                 <button class="btn-modal secondary" onclick="cerrarModalQR()">Cerrar</button>
             </div>
@@ -523,12 +536,24 @@
             const displayZone = document.getElementById('qr-display');
             displayZone.innerHTML = "";
             
-            new QRCode(displayZone, {
+            // Generación básica del QR
+            const qrGeneradorInstancia = new QRCode(displayZone, {
                 text: ultimoTextoQRGenerado,
                 width: 240,
                 height: 240,
                 correctLevel: QRCode.CorrectLevel.L
             });
+
+            // LOGICA CRÍTICA DE RE-CORRECCIÓN PARA MÓVIL:
+            // qrcode.js dibuja en canvas y oculta la imagen en muchos entornos. 
+            // Esperamos unos milisegundos para extraer el canvas y meterlo forzosamente en una etiqueta <img> visible.
+            setTimeout(() => {
+                const canvas = displayZone.querySelector('canvas');
+                if (canvas) {
+                    const dataUrlPure = canvas.toDataURL("image/png");
+                    displayZone.innerHTML = `<img src="${dataUrlPure}" alt="Código QR de tu progreso" style="display:block; width:240px; height:240px;"/>`;
+                }
+            }, 150);
 
             document.getElementById('qr-view-modal').style.display = 'flex';
         }
@@ -558,58 +583,14 @@
                 }
             } catch (err) {
                 navigator.clipboard.writeText(ultimoTextoQRGenerado);
-                alert("Hemos copiado los datos de tu QR al portapapeles.");
+                alert("Hemos copiado los datos en texto de tu QR al portapapeles.");
             }
         }
 
-        // 📱 FUNCIÓN DE DESCARGA TOTALMENTE SOLUCIONADA PARA MÓVILES (BLOB SEGURO + PLAN B)
-        function forzarDescargaQR() {
-            const imgElement = document.getElementById('qr-display').querySelector('img');
-            if (!imgElement) return;
-
-            const base64Data = imgElement.src;
-            const nombreArchivo = `${nombreUsuarioDescarga.toLowerCase().replace(/[^a-z0-9]/g, "-")}-qr.png`;
-
-            try {
-                // Convertimos el base64 directamente a un archivo binario Blob real
-                const partes = base64Data.split(',');
-                const byteString = atob(partes[1]);
-                const mimeString = partes[0].split(':')[1].split(';')[0];
-                
-                const ab = new ArrayBuffer(byteString.length);
-                const ia = new Uint8Array(ab);
-                for (let i = 0; i < byteString.length; i++) {
-                    ia[i] = byteString.charCodeAt(i);
-                }
-                const blob = new Blob([ab], { type: mimeString });
-                const blobUrl = URL.createObjectURL(blob);
-
-                // Intentamos la descarga forzada por enlace limpio usando el Blob
-                const link = document.createElement("a");
-                link.href = blobUrl;
-                link.download = nombreArchivo;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Liberamos memoria del objeto URL de forma asíncrona
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-                cerrarModalQR();
-                mostrarMetadatosPantalla();
-            } catch (error) {
-                // PLAN B SEGURO PARA NAVEGADORES MÓVILES EXTREMOS: Abre la imagen pura en pestaña nueva para guardado manual
-                const nuevaVentana = window.open();
-                if (nuevaVentana) {
-                    nuevaVentana.document.write(`<p style="font-family:sans-serif; text-align:center; padding:10px;">Mantén presionada la imagen para guardarla en tus fotos:</p><div style="text-align:center;"><img src="${base64Data}" style="max-width:100%; height:auto;"/></div>`);
-                    nuevaVentana.document.close();
-                } else {
-                    alert("Por favor, mantén presionada la imagen del código QR directamente en la pantalla para guardarla en tus fotos.");
-                }
-                cerrarModalQR();
-            }
+        function cerrarModalQR() { 
+            document.getElementById('qr-view-modal').style.display = 'none'; 
+            mostrarMetadatosPantalla();
         }
-
-        function cerrarModalQR() { document.getElementById('qr-view-modal').style.display = 'none'; }
 
         function abrirCamara(esComparacion) {
             esModoComparacionGlobal = esComparacion;
@@ -750,5 +731,5 @@
             actualizarContadores();
         });
     </script>
-</body> 
+</body>
 </html>
