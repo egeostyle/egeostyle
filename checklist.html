@@ -323,7 +323,7 @@
             <p id="qr-meta-details" style="font-size:0.85rem; color:#444; font-weight: bold; margin: 0; line-height: 1.4;"></p>
             
             <p style="font-size:0.8rem; color:#7f8c8d; margin: 8px 0 5px 0; padding: 0 10px; font-style: italic; font-weight: 500;">
-                Para <strong>guardar el QR</strong>, mantén presionada la imagen para que puedas guardarla en tu dispositivo.
+                Para guardar el QR, mantén presionada la imagen para descargarla en tu dispositivo.
             </p>
 
             <div id="qr-display" class="qr-display-zone"></div>
@@ -515,7 +515,9 @@
             let nombreUsuario = prompt("Introduce tu nombre:", "");
             if (nombreUsuario === null) return; 
             nombreUsuario = nombreUsuario.trim() || "Invitado";
-            nombreUsuarioDescarga = nombreUsuario;
+            
+            // Limpieza del nombre para usarlo de forma segura en archivos
+            nombreUsuarioDescarga = nombreUsuario.toLowerCase().replace(/[^a-z0-9]/g, "-") || "invitado";
 
             const timestampReducido = Date.now();
             const fechaFormateada = new Date(timestampReducido).toLocaleString();
@@ -536,7 +538,6 @@
             const displayZone = document.getElementById('qr-display');
             displayZone.innerHTML = "";
             
-            // Generación básica del QR
             const qrGeneradorInstancia = new QRCode(displayZone, {
                 text: ultimoTextoQRGenerado,
                 width: 240,
@@ -544,14 +545,21 @@
                 correctLevel: QRCode.CorrectLevel.L
             });
 
-            // LOGICA CRÍTICA DE RE-CORRECCIÓN PARA MÓVIL:
-            // qrcode.js dibuja en canvas y oculta la imagen en muchos entornos. 
-            // Esperamos unos milisegundos para extraer el canvas y meterlo forzosamente en una etiqueta <img> visible.
+            // LOGICA AJUSTADA CON ATRIBUTO DOWNLOAD ASIGNADO DIRECTAMENTE AL ELEMENTO <img> REAL
             setTimeout(() => {
                 const canvas = displayZone.querySelector('canvas');
                 if (canvas) {
                     const dataUrlPure = canvas.toDataURL("image/png");
-                    displayZone.innerHTML = `<img src="${dataUrlPure}" alt="Código QR de tu progreso" style="display:block; width:240px; height:240px;"/>`;
+                    const nombreFinalArchivo = `${nombreUsuarioDescarga}_checklist.png`;
+                    
+                    // Al inyectar la imagen, le añadimos download y el título explícito para los gestores nativos de móvil
+                    displayZone.innerHTML = `
+                        <img src="${dataUrlPure}" 
+                             download="${nombreFinalArchivo}" 
+                             title="${nombreFinalArchivo}"
+                             alt="Código QR de tu progreso" 
+                             style="display:block; width:240px; height:240px;"/>
+                    `;
                 }
             }, 150);
 
@@ -565,7 +573,7 @@
             try {
                 const response = await fetch(imgElement.src);
                 const blob = await response.blob();
-                const file = new File([blob], `${nombreUsuarioDescarga}-album.png`, { type: 'image/png' });
+                const file = new File([blob], `${nombreUsuarioDescarga}_checklist.png`, { type: 'image/png' });
 
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
