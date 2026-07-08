@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ÁLBUM MUNDIAL 2026</title>
-    <!-- Contenedores dinámicos para los metadatos de usuario -->
     <meta name="checklist-user" content="Invitado">
     <meta name="checklist-timestamp" content="">
     
@@ -49,7 +48,7 @@
             border-radius: 12px;
             margin-bottom: 15px;
             display: flex;
-            flex-direction: row !important; /* Forzado a fila única horizontal */
+            flex-direction: row !important;
             justify-content: space-between;
             gap: 8px;
             width: 100%;
@@ -105,7 +104,7 @@
         .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
         .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
 
-        /* Panel de Resultados de Comparación (Diseño Sobrio) */
+        /* Panel de Resultados de Comparación */
         .comparison-results {
             background: #ffffff;
             border: 1px solid #dcdde1;
@@ -124,15 +123,8 @@
             border-bottom: 1px solid #eee;
             padding-bottom: 6px;
         }
-        .comparison-results ul {
-            margin: 0 0 15px 0;
-            padding-left: 20px;
-        }
-        .comparison-results li {
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
+        .comparison-results ul { margin: 0 0 15px 0; padding-left: 20px; }
+        .comparison-results li { margin-bottom: 8px; font-size: 0.9rem; line-height: 1.4; }
         .btn-close-compare {
             background-color: #f5f6fa;
             border: 1px solid #c2c2c2;
@@ -182,8 +174,26 @@
         .btn-download { background-color: #2980b9; }
         .btn-pdf { background-color: #27ae60; }
 
-        /* Estructura de Álbum */
-        .countries-container { display: flex; flex-direction: column; gap: 20px; }
+        /* ==========================================================================
+           ESTRUCTURA DEL ÁLBUM: Adaptación Inteligente (Móvil vs Escritorio)
+           ========================================================================== */
+        
+        /* Por defecto: Versión Móvil en 1 Columna */
+        .countries-container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+        }
+
+        /* Cambiar a 2 Columnas en Pantallas de Escritorio */
+        @media screen and (min-width: 992px) {
+            .countries-container {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+        }
+
         .country-card { background: var(--card-bg); border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .country-title { font-size: 1.05rem; font-weight: bold; margin: 0 0 12px 0; padding-bottom: 4px; border-bottom: 3px solid var(--primary-color); color: var(--primary-color); display: inline-block; }
         
@@ -205,7 +215,7 @@
 
         .instructions { font-size: 0.8rem; color: #666; text-align: center; margin-bottom: 15px; }
 
-        /* Impresión / PDF */
+        /* Reglas estrictas para Impresión / PDF */
         @media print {
             @page { size: A4 portrait; margin: 6mm; }
             body { background-color: #fff; padding: 0; font-size: 10px; }
@@ -231,7 +241,6 @@
         <div id="user-tag" style="font-size:0.85rem; margin-top:5px; font-style:italic; opacity:0.8;"></div>
     </header>
 
-    <!-- ZONA DE CARGA DE ARCHIVOS -->
     <div class="upload-zone">
         <label class="btn-upload-label">
             Subir Web
@@ -243,7 +252,6 @@
         </label>
     </div>
 
-    <!-- PANEL DE RESULTADOS DE COMPARACIÓN (SOBRIO) -->
     <div class="comparison-results" id="compare-box">
         <h3 id="compare-title">Resultados de intercambio</h3>
         <div id="compare-info" style="margin-bottom: 12px; font-size: 0.9rem; color: #555;"></div>
@@ -264,15 +272,13 @@
     
     <div class="instructions">💡 <i>Modo de uso: Un toque cambia de estado ( Blanco ➡️ Verde ➡️ Rojo ➡️ Blanco )</i></div>
 
-    <!-- BOTONERA FLOTANTE -->
     <div class="floating-action-container">
         <button class="btn btn-download" onclick="descargarProgreso()">💾 Guardar Web</button>
         <button class="btn btn-pdf" onclick="exportarPDF()">📄 Exportar a PDF</button>
     </div>
 
     <div class="countries-container" id="main-container">
-        <!-- El JS rellenará dinámicamente -->
-    </div>
+        </div>
 
     <script>
         const albumData = [
