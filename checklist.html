@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ÁLBUM MUNDIAL 2026</title>
+    <!-- Contenedores dinámicos para los metadatos de usuario -->
     <meta name="checklist-user" content="Invitado">
     <meta name="checklist-timestamp" content="">
     
@@ -104,7 +105,7 @@
         .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
         .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
 
-        /* Panel de Resultados de Comparación */
+        /* Panel de Resultados de Comparación (Diseño Sobrio) */
         .comparison-results {
             background: #ffffff;
             border: 1px solid #dcdde1;
@@ -174,18 +175,13 @@
         .btn-download { background-color: #2980b9; }
         .btn-pdf { background-color: #27ae60; }
 
-        /* ==========================================================================
-           ESTRUCTURA DEL ÁLBUM: Adaptación Inteligente (Móvil vs Escritorio)
-           ========================================================================== */
-        
-        /* Por defecto: Versión Móvil en 1 Columna */
+        /* Estructura Adaptativa: 1 col móvil, 2 cols escritorio */
         .countries-container { 
             display: flex; 
             flex-direction: column; 
             gap: 20px; 
         }
 
-        /* Cambiar a 2 Columnas en Pantallas de Escritorio */
         @media screen and (min-width: 992px) {
             .countries-container {
                 display: grid;
@@ -215,7 +211,7 @@
 
         .instructions { font-size: 0.8rem; color: #666; text-align: center; margin-bottom: 15px; }
 
-        /* Reglas estrictas para Impresión / PDF */
+        /* Impresión / PDF */
         @media print {
             @page { size: A4 portrait; margin: 6mm; }
             body { background-color: #fff; padding: 0; font-size: 10px; }
@@ -241,6 +237,7 @@
         <div id="user-tag" style="font-size:0.85rem; margin-top:5px; font-style:italic; opacity:0.8;"></div>
     </header>
 
+    <!-- ZONA DE CARGA DE ARCHIVOS -->
     <div class="upload-zone">
         <label class="btn-upload-label">
             Subir Web
@@ -252,9 +249,10 @@
         </label>
     </div>
 
+    <!-- PANEL DE RESULTADOS DE COMPARACIÓN -->
     <div class="comparison-results" id="compare-box">
         <h3 id="compare-title">Resultados de intercambio</h3>
-        <div id="compare-info" style="margin-bottom: 12px; font-size: 0.9rem; color: #555;"></div>
+        <div id="compare-info" style="margin-bottom: 14px; font-size: 0.9rem; color: #444; line-height: 1.5;"></div>
         <ul>
             <li><strong>Figuritas que tu amigo te puede dar (Él las tiene repetidas y tú no las tienes):</strong> <span id="te-da">- Ninguna -</span></li>
             <li><strong>Figuritas que tú le puedes dar (Tú las tienes repetidas y él no las tiene):</strong> <span id="le-das">- Ninguna -</span></li>
@@ -272,13 +270,15 @@
     
     <div class="instructions">💡 <i>Modo de uso: Un toque cambia de estado ( Blanco ➡️ Verde ➡️ Rojo ➡️ Blanco )</i></div>
 
+    <!-- BOTONERA FLOTANTE -->
     <div class="floating-action-container">
         <button class="btn btn-download" onclick="descargarProgreso()">💾 Guardar Web</button>
         <button class="btn btn-pdf" onclick="exportarPDF()">📄 Exportar a PDF</button>
     </div>
 
     <div class="countries-container" id="main-container">
-        </div>
+        <!-- El JS rellenará dinámicamente -->
+    </div>
 
     <script>
         const albumData = [
@@ -393,11 +393,17 @@
             document.getElementById('count-falta').innerText = faltan;
         }
 
+        function obtenerMetadatosLocales() {
+            return {
+                usuario: document.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Invitado",
+                fecha: document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content') || "Sin fecha"
+            };
+        }
+
         function mostrarMetadatosPantalla() {
-            const usuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content');
-            const fecha = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content');
-            if(fecha) {
-                document.getElementById('user-tag').innerText = `Usuario: ${usuario} | Último guardado: ${fecha}`;
+            const miData = obtenerMetadatosLocales();
+            if(miData.fecha !== "Sin fecha") {
+                document.getElementById('user-tag').innerText = `Usuario: ${miData.usuario} | Último guardado: ${miData.fecha}`;
             }
         }
 
@@ -453,7 +459,10 @@
                     mostrarMetadatosPantalla();
                     alert("¡Tu checklist ha sido cargado con éxito!");
                 } else {
+                    // Extraer info de ambos usuarios para el panel sobrio de comparación
+                    const miData = obtenerMetadatosLocales();
                     const amigoUser = doc.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Amigo";
+                    const amigoTime = doc.querySelector('meta[name="checklist-timestamp"]').getAttribute('content') || "Sin fecha";
                     
                     let teDa = [];
                     let leDas = [];
@@ -474,7 +483,12 @@
                         }
                     });
 
-                    document.getElementById('compare-info').innerText = `Resultados obtenidos al contrastar con el archivo de ${amigoUser}:`;
+                    // Modificación del bloque informativo con los metadatos cruzados de ambos
+                    document.getElementById('compare-info').innerHTML = `
+                        • <strong>Usuario 1 (${miData.usuario}):</strong> Archivo guardado el ${miData.fecha}<br>
+                        • <strong>Usuario 2 (${amigoUser}):</strong> Archivo guardado el ${amigoTime}
+                    `;
+                    
                     document.getElementById('te-da').innerText = teDa.length > 0 ? teDa.join(', ') : 'Ninguna.';
                     document.getElementById('le-das').innerText = leDas.length > 0 ? leDas.join(', ') : 'Ninguna.';
                     document.getElementById('compare-box').style.display = 'block';
