@@ -41,28 +41,32 @@
         h1 { margin: 0 0 10px 0; font-size: 1.8rem; }
         .subtitle { font-size: 1rem; opacity: 0.9; }
 
-        /* Panel de Carga y Gestión de Archivos */
+        /* Panel de Carga y Gestión de Archivos en Fila Única */
         .upload-zone {
             background: #eef2f5;
             border: 2px dashed #bdc3c7;
-            padding: 15px;
+            padding: 12px;
             border-radius: 12px;
             margin-bottom: 15px;
             display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
+            flex-direction: row !important; /* Forzado a fila única horizontal */
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .btn-upload-label {
+            flex: 1;
             background-color: #7f8c8d;
             color: white;
-            padding: 10px 16px;
-            font-size: 0.9rem;
+            padding: 10px 4px;
+            font-size: 0.85rem;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
-            display: inline-block;
+            text-align: center;
+            white-space: nowrap;
             transition: background 0.2s;
         }
         .btn-upload-label:hover { background-color: #95a5a6; }
@@ -101,18 +105,45 @@
         .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
         .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
 
-        /* Panel de Resultados de Comparación */
+        /* Panel de Resultados de Comparación (Diseño Sobrio) */
         .comparison-results {
-            background: #fff3cd;
-            border: 1px solid #ffeeba;
-            color: #856404;
+            background: #ffffff;
+            border: 1px solid #dcdde1;
+            color: #2f3640;
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             display: none;
         }
-        .comparison-results h3 { margin-top: 0; color: #d35400; font-size: 1.1rem;}
-        .match-list { font-weight: 600; word-break: break-all; margin-bottom: 10px; font-size: 0.9rem;}
+        .comparison-results h3 { 
+            margin-top: 0; 
+            margin-bottom: 12px;
+            color: var(--primary-color); 
+            font-size: 1.1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 6px;
+        }
+        .comparison-results ul {
+            margin: 0 0 15px 0;
+            padding-left: 20px;
+        }
+        .comparison-results li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .btn-close-compare {
+            background-color: #f5f6fa;
+            border: 1px solid #c2c2c2;
+            color: #333;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-close-compare:hover { background-color: #dcdde1; }
 
         /* Botonera Flotante Fija Inferior */
         .floating-action-container {
@@ -203,22 +234,24 @@
     <!-- ZONA DE CARGA DE ARCHIVOS -->
     <div class="upload-zone">
         <label class="btn-upload-label">
-            📂 Subir mi Web HTML
+            Subir Web
             <input type="file" id="upload-file" accept=".html" onchange="importarProgreso(this, false)">
         </label>
         <label class="btn-upload-label compare">
-            🔄 Comparar Álbum
+            Comparar Álbum
             <input type="file" id="compare-file" accept=".html" onchange="importarProgreso(this, true)">
         </label>
     </div>
 
-    <!-- PANEL DE RESULTADOS DE COMPARACIÓN -->
+    <!-- PANEL DE RESULTADOS DE COMPARACIÓN (SOBRIO) -->
     <div class="comparison-results" id="compare-box">
-        <h3>📊 Resultados del Intercambio Efectivo</h3>
-        <div id="compare-info" style="margin-bottom: 10px; font-weight: bold;"></div>
-        <div class="match-list">🎁 <strong>Figuritas que tu amigo te puede dar (Él las tiene repetidas y tú no las tienes):</strong> <span id="te-da">- Ninguna -</span></div>
-        <div class="match-list">🤝 <strong>Figuritas que tú le puedes dar (Tú las tienes repetidas y él no las tiene):</strong> <span id="le-das">- Ninguna -</span></div>
-        <button style="padding:4px 8px; font-size:0.8rem; cursor:pointer;" onclick="cerrarComparacion()">Cerrar Comparación</button>
+        <h3 id="compare-title">Resultados de intercambio</h3>
+        <div id="compare-info" style="margin-bottom: 12px; font-size: 0.9rem; color: #555;"></div>
+        <ul>
+            <li><strong>Figuritas que tu amigo te puede dar (Él las tiene repetidas y tú no las tienes):</strong> <span id="te-da">- Ninguna -</span></li>
+            <li><strong>Figuritas que tú le puedes dar (Tú las tienes repetidas y él no las tiene):</strong> <span id="le-das">- Ninguna -</span></li>
+        </ul>
+        <button class="btn-close-compare" onclick="cerrarComparacion()">Cerrar Resultados</button>
     </div>
 
     <div class="dashboard-controls">
@@ -362,21 +395,17 @@
             }
         }
 
-        // FUNCIÓN GUARDAR PROGRESO CON METADATOS PERSONALIZADOS
         function descargarProgreso() {
             let nombreUsuario = prompt("Por favor, introduce tu nombre para personalizar el archivo:", "george");
-            if (nombreUsuario === null) return; // Cancelado
+            if (nombreUsuario === null) return; 
             nombreUsuario = nombreUsuario.trim() || "usuario";
 
-            // Formatear Fecha y Hora
             const ahora = new Date();
             const timestamp = ahora.toLocaleString();
 
-            // Inyectar metadatos en el DOM actual
             document.querySelector('meta[name="checklist-user"]').setAttribute('content', nombreUsuario);
             document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', timestamp);
 
-            // Obtener el HTML con los cambios reflejados
             const htmlCompleto = document.documentElement.outerHTML;
             const blob = new Blob([htmlCompleto], { type: "text/html;charset=utf-8" });
             
@@ -388,7 +417,6 @@
             mostrarMetadatosPantalla();
         }
 
-        // FUNCIÓN CARGAR WEB / COMPARAR COMPAÑERO
         function importarProgreso(input, esComparacion) {
             const file = input.files[0];
             if (!file) return;
@@ -404,7 +432,6 @@
                 }
 
                 if (!esComparacion) {
-                    // Modo Cargar Mi Álbum
                     const metaUser = doc.querySelector('meta[name="checklist-user"]').getAttribute('content');
                     const metaTime = doc.querySelector('meta[name="checklist-timestamp"]').getAttribute('content');
                     document.querySelector('meta[name="checklist-user"]').setAttribute('content', metaUser);
@@ -420,7 +447,6 @@
                     mostrarMetadatosPantalla();
                     alert("¡Tu checklist ha sido cargado con éxito!");
                 } else {
-                    // Modo Comparación Cruzada Inteligente
                     const amigoUser = doc.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Amigo";
                     
                     let teDa = [];
@@ -431,28 +457,24 @@
                         if (stickerAmigo) {
                             const miEstado = parseInt(miSticker.getAttribute('data-state')) || 0;
                             const amigoEstado = parseInt(stickerAmigo.getAttribute('data-state')) || 0;
-
                             const codigoFigurita = miSticker.innerText;
 
-                            // Él te da: Él la tiene repetida (2) y tú no la tienes (0)
                             if (amigoEstado === 2 && miEstado === 0) {
                                 teDa.push(codigoFigurita);
                             }
-                            // Tú le das: Tú la tienes repetida (2) y él no la tiene (0)
                             if (miEstado === 2 && amigoEstado === 0) {
                                 leDas.push(codigoFigurita);
                             }
                         }
                     });
 
-                    // Renderizar Resultados de Intercambio
-                    document.getElementById('compare-info').innerText = `Comparando con el álbum de: ${amigoUser}`;
-                    document.getElementById('te-da').innerText = teDa.length > 0 ? teDa.join(', ') : 'Ninguna que necesites.';
-                    document.getElementById('le-das').innerText = leDas.length > 0 ? leDas.join(', ') : 'Ninguna que él necesite.';
+                    document.getElementById('compare-info').innerText = `Resultados obtenidos al contrastar con el archivo de ${amigoUser}:`;
+                    document.getElementById('te-da').innerText = teDa.length > 0 ? teDa.join(', ') : 'Ninguna.';
+                    document.getElementById('le-das').innerText = leDas.length > 0 ? leDas.join(', ') : 'Ninguna.';
                     document.getElementById('compare-box').style.display = 'block';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
-                input.value = ""; // Limpiar input para permitir recargas del mismo archivo
+                input.value = ""; 
             };
             reader.readAsText(file);
         }
