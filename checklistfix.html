@@ -476,7 +476,6 @@
             }
         }
 
-        // 🗜️ COMPRESIÓN BASE36
         function comprimirEstados(cadenaEstados) {
             let resultadoCompreso = "";
             for (let i = 0; i < cadenaEstados.length; i += 5) {
@@ -563,15 +562,50 @@
             }
         }
 
+        // 📱 FUNCIÓN DE DESCARGA TOTALMENTE SOLUCIONADA PARA MÓVILES (BLOB SEGURO + PLAN B)
         function forzarDescargaQR() {
             const imgElement = document.getElementById('qr-display').querySelector('img');
-            if(imgElement) {
+            if (!imgElement) return;
+
+            const base64Data = imgElement.src;
+            const nombreArchivo = `${nombreUsuarioDescarga.toLowerCase().replace(/[^a-z0-9]/g, "-")}-qr.png`;
+
+            try {
+                // Convertimos el base64 directamente a un archivo binario Blob real
+                const partes = base64Data.split(',');
+                const byteString = atob(partes[1]);
+                const mimeString = partes[0].split(':')[1].split(';')[0];
+                
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], { type: mimeString });
+                const blobUrl = URL.createObjectURL(blob);
+
+                // Intentamos la descarga forzada por enlace limpio usando el Blob
                 const link = document.createElement("a");
-                link.href = imgElement.src;
-                link.download = `${nombreUsuarioDescarga.toLowerCase().replace(/[^a-z0-9]/g, "-")}-qr.png`;
+                link.href = blobUrl;
+                link.download = nombreArchivo;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
+
+                // Liberamos memoria del objeto URL de forma asíncrona
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
                 cerrarModalQR();
                 mostrarMetadatosPantalla();
+            } catch (error) {
+                // PLAN B SEGURO PARA NAVEGADORES MÓVILES EXTREMOS: Abre la imagen pura en pestaña nueva para guardado manual
+                const nuevaVentana = window.open();
+                if (nuevaVentana) {
+                    nuevaVentana.document.write(`<p style="font-family:sans-serif; text-align:center; padding:10px;">Mantén presionada la imagen para guardarla en tus fotos:</p><div style="text-align:center;"><img src="${base64Data}" style="max-width:100%; height:auto;"/></div>`);
+                    nuevaVentana.document.close();
+                } else {
+                    alert("Por favor, mantén presionada la imagen del código QR directamente en la pantalla para guardarla en tus fotos.");
+                }
+                cerrarModalQR();
             }
         }
 
@@ -661,7 +695,6 @@
                 mostrarMetadatosPantalla();
                 alert(`¡Progreso de ${qrUsuario} cargado correctamente!`);
             } else {
-                // LÓGICA DE COMPARACIÓN CORREGIDA Y PERSONALIZADA
                 let miUsuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Invitado";
                 const miTimestamp = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content') || "";
                 
