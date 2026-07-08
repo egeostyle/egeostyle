@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ÁLBUM MUNDIAL 2026</title>
+    <!-- Contenedores dinámicos para los metadatos de usuario -->
+    <meta name="checklist-user" content="Invitado">
+    <meta name="checklist-timestamp" content="">
+    
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -13,6 +17,7 @@
             --tengo-color: #2ecc71;
             --repetida-color: #e74c3c;
             --falta-color: #bdc3c7;
+            --info-color: #f39c12;
         }
 
         body {
@@ -36,7 +41,40 @@
         h1 { margin: 0 0 10px 0; font-size: 1.8rem; }
         .subtitle { font-size: 1rem; opacity: 0.9; }
 
-        /* Panel de Control de Estadísticas en Fila Única */
+        /* Panel de Carga y Gestión de Archivos en Fila Única */
+        .upload-zone {
+            background: #eef2f5;
+            border: 2px dashed #bdc3c7;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: row !important; /* Forzado a fila única horizontal */
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn-upload-label {
+            flex: 1;
+            background-color: #7f8c8d;
+            color: white;
+            padding: 10px 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-upload-label:hover { background-color: #95a5a6; }
+        .btn-upload-label.compare { background-color: var(--info-color); }
+        .btn-upload-label.compare:hover { background-color: #e67e22; }
+        .upload-zone input[type="file"] { display: none; }
+
+        /* Panel de Control de Estadísticas */
         .dashboard-controls {
             background: var(--card-bg);
             padding: 12px;
@@ -67,7 +105,47 @@
         .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
         .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
 
-        /* Botonera Flotante */
+        /* Panel de Resultados de Comparación (Diseño Sobrio) */
+        .comparison-results {
+            background: #ffffff;
+            border: 1px solid #dcdde1;
+            color: #2f3640;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: none;
+        }
+        .comparison-results h3 { 
+            margin-top: 0; 
+            margin-bottom: 12px;
+            color: var(--primary-color); 
+            font-size: 1.1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 6px;
+        }
+        .comparison-results ul {
+            margin: 0 0 15px 0;
+            padding-left: 20px;
+        }
+        .comparison-results li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .btn-close-compare {
+            background-color: #f5f6fa;
+            border: 1px solid #c2c2c2;
+            color: #333;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-close-compare:hover { background-color: #dcdde1; }
+
+        /* Botonera Flotante Fija Inferior */
         .floating-action-container {
             position: fixed;
             bottom: 20px;
@@ -101,42 +179,15 @@
             white-space: nowrap;
         }
         .btn:active { transform: scale(0.95); }
-
         .btn-download { background-color: #2980b9; }
         .btn-pdf { background-color: #27ae60; }
 
-        /* Contenedor Principal de Países */
-        .countries-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .country-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
-        .country-title {
-            font-size: 1.05rem;
-            font-weight: bold;
-            margin-top: 0;
-            margin-bottom: 12px;
-            padding-bottom: 4px;
-            border-bottom: 3px solid var(--primary-color);
-            color: var(--primary-color);
-            display: inline-block;
-        }
-
-        /* Grid de Figuritas */
-        .stickers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-            gap: 6px;
-        }
-
+        /* Estructura de Álbum */
+        .countries-container { display: flex; flex-direction: column; gap: 20px; }
+        .country-card { background: var(--card-bg); border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .country-title { font-size: 1.05rem; font-weight: bold; margin: 0 0 12px 0; padding-bottom: 4px; border-bottom: 3px solid var(--primary-color); color: var(--primary-color); display: inline-block; }
+        
+        .stickers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 6px; }
         .sticker {
             background-color: #f0f3f5;
             border: 2px solid #dcdde1;
@@ -146,100 +197,29 @@
             font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
-            
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
 
-        .sticker.state-tengo {
-            background-color: var(--tengo-color) !important;
-            border-color: #27ae60;
-            color: white;
-        }
+        .sticker.state-tengo { background-color: var(--tengo-color) !important; border-color: #27ae60; color: white; }
+        .sticker.state-repetida { background-color: var(--repetida-color) !important; border-color: #c0392b; color: white; }
 
-        .sticker.state-repetida {
-            background-color: var(--repetida-color) !important;
-            border-color: #c0392b;
-            color: white;
-        }
+        .instructions { font-size: 0.8rem; color: #666; text-align: center; margin-bottom: 15px; }
 
-        .instructions {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 5px;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        /* ==========================================================================
-           REDiseño de Ultra-Compresión para Impresión / PDF (Ahorro Máximo de Hojas)
-           ========================================================================== */
+        /* Impresión / PDF */
         @media print {
-            @page { 
-                size: A4 portrait; 
-                margin: 6mm; /* Márgenes de página mínimos */
-            }
-            body { 
-                background-color: #fff; 
-                padding: 0; 
-                font-size: 10px;
-            }
-            header { 
-                background: none !important; 
-                color: #000 !important; 
-                padding: 0; 
-                margin-bottom: 10px; 
-                box-shadow: none;
-                text-align: left;
-            }
+            @page { size: A4 portrait; margin: 6mm; }
+            body { background-color: #fff; padding: 0; font-size: 10px; }
+            header { background: none !important; color: #000 !important; padding: 0; margin-bottom: 10px; box-shadow: none; text-align: left; }
             header h1 { font-size: 1.3rem; color: #5c061f; margin: 0; }
             header .subtitle { font-size: 0.85rem; color: #555; }
             
-            .dashboard-controls, .instructions, .floating-action-container { display: none !important; } 
+            .dashboard-controls, .instructions, .floating-action-container, .upload-zone, .comparison-results { display: none !important; } 
             
-            /* Súper compresión: Distribución en 3 Columnas */
-            .countries-container {
-                display: grid !important;
-                grid-template-columns: repeat(3, 1fr) !important;
-                gap: 6px !important;
-            }
-
-            .country-card { 
-                border: 1px solid #e0e0e0 !important;
-                border-radius: 4px !important;
-                padding: 5px !important;
-                box-shadow: none !important;
-                background: #fff !important;
-                break-inside: avoid !important; /* Evita que los países se dividan de página */
-                margin: 0 !important;
-            }
-
-            .country-title { 
-                font-size: 0.75rem !important; 
-                margin-bottom: 4px !important; 
-                padding-bottom: 1px !important;
-                border-bottom: 1.5px solid #5c061f !important; 
-                display: block;
-            }
-
-            /* Minimizar el tamaño de cada figurita en el papel */
-            .stickers-grid { 
-                grid-template-columns: repeat(5, 1fr) !important; /* Fuerza 5 figuritas por fila dentro de la columna */
-                gap: 2px !important; 
-            }
-
-            .sticker { 
-                padding: 3px 0 !important; 
-                font-size: 0.6rem !important; 
-                border: 1px solid #ccc !important; 
-                border-radius: 2px !important;
-                background-color: #fafafa !important;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
+            .countries-container { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
+            .country-card { border: 1px solid #e0e0e0 !important; border-radius: 4px !important; padding: 5px !important; box-shadow: none !important; background: #fff !important; break-inside: avoid !important; }
+            .country-title { font-size: 0.75rem !important; margin-bottom: 4px !important; border-bottom: 1.5px solid #5c061f !important; display: block; }
+            .stickers-grid { grid-template-columns: repeat(5, 1fr) !important; gap: 2px !important; }
+            .sticker { padding: 3px 0 !important; font-size: 0.6rem !important; border: 1px solid #ccc !important; border-radius: 2px !important; background-color: #fafafa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
 </head>
@@ -248,7 +228,31 @@
     <header>
         <h1 id="main-title">ÁLBUM MUNDIAL 2026</h1>
         <div class="subtitle" id="main-subtitle">Checklist de figuras</div>
+        <div id="user-tag" style="font-size:0.85rem; margin-top:5px; font-style:italic; opacity:0.8;"></div>
     </header>
+
+    <!-- ZONA DE CARGA DE ARCHIVOS -->
+    <div class="upload-zone">
+        <label class="btn-upload-label">
+            Subir Web
+            <input type="file" id="upload-file" accept=".html" onchange="importarProgreso(this, false)">
+        </label>
+        <label class="btn-upload-label compare">
+            Comparar Álbum
+            <input type="file" id="compare-file" accept=".html" onchange="importarProgreso(this, true)">
+        </label>
+    </div>
+
+    <!-- PANEL DE RESULTADOS DE COMPARACIÓN (SOBRIO) -->
+    <div class="comparison-results" id="compare-box">
+        <h3 id="compare-title">Resultados de intercambio</h3>
+        <div id="compare-info" style="margin-bottom: 12px; font-size: 0.9rem; color: #555;"></div>
+        <ul>
+            <li><strong>Figuritas que tu amigo te puede dar (Él las tiene repetidas y tú no las tienes):</strong> <span id="te-da">- Ninguna -</span></li>
+            <li><strong>Figuritas que tú le puedes dar (Tú las tienes repetidas y él no las tiene):</strong> <span id="le-das">- Ninguna -</span></li>
+        </ul>
+        <button class="btn-close-compare" onclick="cerrarComparacion()">Cerrar Resultados</button>
+    </div>
 
     <div class="dashboard-controls">
         <div class="stats">
@@ -267,7 +271,7 @@
     </div>
 
     <div class="countries-container" id="main-container">
-        <!-- El JS rellenará las secciones automáticamente -->
+        <!-- El JS rellenará dinámicamente -->
     </div>
 
     <script>
@@ -331,7 +335,6 @@
                 albumData.forEach(item => {
                     const card = document.createElement('div');
                     card.className = 'country-card';
-                    
                     const title = document.createElement('div');
                     title.className = 'country-title';
                     title.innerText = item.country;
@@ -343,6 +346,7 @@
                     for (let i = 1; i <= item.count; i++) {
                         const sticker = document.createElement('div');
                         sticker.className = 'sticker';
+                        sticker.id = `st-${item.prefix}-${i}`;
                         sticker.innerText = `${item.prefix}${i}`;
                         sticker.setAttribute('data-state', '0'); 
                         
@@ -352,36 +356,29 @@
                     card.appendChild(grid);
                     container.appendChild(card);
                 });
-            } else {
-                document.querySelectorAll('.sticker').forEach(sticker => {
-                    vincularEventoToque(sticker);
-                });
             }
+            mostrarMetadatosPantalla();
         }
 
         function vincularEventoToque(element) {
             element.addEventListener('click', function() {
                 let currentState = parseInt(element.getAttribute('data-state')) || 0;
                 let nextState = (currentState + 1) % 3;
-                
                 setStickerState(element, nextState);
             });
         }
 
-        // Modifica estados visuales y atributos
         function setStickerState(element, state) {
             element.setAttribute('data-state', state);
             element.classList.remove('state-tengo', 'state-repetida');
-            
             if (state === 1) element.classList.add('state-tengo');
             if (state === 2) element.classList.add('state-repetida');
-            
             actualizarContadores();
         }
 
         function actualizarContadores() {
             const totalStickers = document.querySelectorAll('.sticker').length;
-            const tengo = document.querySelectorAll('.sticker[data-state="1"]').length;
+            const tengo = document.querySelectorAll('.sticker[data-state="1"]').length + document.querySelectorAll('.sticker[data-state="2"]').length;
             const repetidas = document.querySelectorAll('.sticker[data-state="2"]').length;
             const faltan = totalStickers - tengo;
 
@@ -390,20 +387,106 @@
             document.getElementById('count-falta').innerText = faltan;
         }
 
+        function mostrarMetadatosPantalla() {
+            const usuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content');
+            const fecha = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content');
+            if(fecha) {
+                document.getElementById('user-tag').innerText = `Usuario: ${usuario} | Último guardado: ${fecha}`;
+            }
+        }
+
         function descargarProgreso() {
+            let nombreUsuario = prompt("Por favor, introduce tu nombre para personalizar el archivo:", "george");
+            if (nombreUsuario === null) return; 
+            nombreUsuario = nombreUsuario.trim() || "usuario";
+
+            const ahora = new Date();
+            const timestamp = ahora.toLocaleString();
+
+            document.querySelector('meta[name="checklist-user"]').setAttribute('content', nombreUsuario);
+            document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', timestamp);
+
             const htmlCompleto = document.documentElement.outerHTML;
             const blob = new Blob([htmlCompleto], { type: "text/html;charset=utf-8" });
+            
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "Mi_Checklist_Mundial_2026.html";
+            link.download = `${nombreUsuario.toLowerCase().replace(/[^a-z0-9]/g, "-")}-checklist.html`;
             link.click();
+            
+            mostrarMetadatosPantalla();
+        }
+
+        function importarProgreso(input, esComparacion) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(e.target.result, 'text/html');
+                
+                if (!doc.getElementById('main-container')) {
+                    alert("Archivo no válido. Asegúrate de subir un HTML exportado por este sistema.");
+                    return;
+                }
+
+                if (!esComparacion) {
+                    const metaUser = doc.querySelector('meta[name="checklist-user"]').getAttribute('content');
+                    const metaTime = doc.querySelector('meta[name="checklist-timestamp"]').getAttribute('content');
+                    document.querySelector('meta[name="checklist-user"]').setAttribute('content', metaUser);
+                    document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', metaTime);
+
+                    doc.querySelectorAll('.sticker').forEach(stickerRemoto => {
+                        const miSticker = document.getElementById(stickerRemoto.id);
+                        if (miSticker) {
+                            const estado = stickerRemoto.getAttribute('data-state') || '0';
+                            setStickerState(miSticker, parseInt(estado));
+                        }
+                    });
+                    mostrarMetadatosPantalla();
+                    alert("¡Tu checklist ha sido cargado con éxito!");
+                } else {
+                    const amigoUser = doc.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Amigo";
+                    
+                    let teDa = [];
+                    let leDas = [];
+
+                    document.querySelectorAll('.sticker').forEach(miSticker => {
+                        const stickerAmigo = doc.getElementById(miSticker.id);
+                        if (stickerAmigo) {
+                            const miEstado = parseInt(miSticker.getAttribute('data-state')) || 0;
+                            const amigoEstado = parseInt(stickerAmigo.getAttribute('data-state')) || 0;
+                            const codigoFigurita = miSticker.innerText;
+
+                            if (amigoEstado === 2 && miEstado === 0) {
+                                teDa.push(codigoFigurita);
+                            }
+                            if (miEstado === 2 && amigoEstado === 0) {
+                                leDas.push(codigoFigurita);
+                            }
+                        }
+                    });
+
+                    document.getElementById('compare-info').innerText = `Resultados obtenidos al contrastar con el archivo de ${amigoUser}:`;
+                    document.getElementById('te-da').innerText = teDa.length > 0 ? teDa.join(', ') : 'Ninguna.';
+                    document.getElementById('le-das').innerText = leDas.length > 0 ? leDas.join(', ') : 'Ninguna.';
+                    document.getElementById('compare-box').style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                input.value = ""; 
+            };
+            reader.readAsText(file);
+        }
+
+        function cerrarComparacion() {
+            document.getElementById('compare-box').style.display = 'none';
         }
 
         function exportarPDF() {
             window.print();
         }
 
-        // Ejecución
         inicializarStickers();
         actualizarContadores();
     </script>
