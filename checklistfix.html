@@ -20,7 +20,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px 20px 90px 20px; /* Margen extra abajo para no tapar contenido con los botones flotantes */
+            padding: 20px 20px 90px 20px;
         }
 
         header {
@@ -36,7 +36,7 @@
         h1 { margin: 0 0 10px 0; font-size: 1.8rem; }
         .subtitle { font-size: 1rem; opacity: 0.9; }
 
-        /* Panel de Control de Estadísticas (Forzado a Fila Única) */
+        /* Panel de Control de Estadísticas en Fila Única */
         .dashboard-controls {
             background: var(--card-bg);
             padding: 12px;
@@ -47,19 +47,19 @@
 
         .stats {
             display: flex;
-            flex-direction: row !important; /* Estricto en fila única */
+            flex-direction: row !important;
             justify-content: space-between;
             gap: 6px;
             width: 100%;
         }
 
         .stat-box {
-            flex: 1; /* Distribuye espacio equitativo */
+            flex: 1;
             padding: 10px 4px;
             border-radius: 8px;
             font-weight: bold;
             text-align: center;
-            font-size: 0.85rem; /* Ajustado para pantallas pequeñas */
+            font-size: 0.85rem;
             border: 1px solid #ddd;
             white-space: nowrap;
         }
@@ -67,7 +67,7 @@
         .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
         .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
 
-        /* Botonera Flotante (Scroll Continuo) */
+        /* Botonera Flotante */
         .floating-action-container {
             position: fixed;
             bottom: 20px;
@@ -100,7 +100,7 @@
             gap: 6px;
             white-space: nowrap;
         }
-        .btn:active { transform: scale(0.95); } /* Efecto feedback al tocar en móvil */
+        .btn:active { transform: scale(0.95); }
 
         .btn-download { background-color: #2980b9; }
         .btn-pdf { background-color: #27ae60; }
@@ -147,7 +147,6 @@
             font-weight: 600;
             cursor: pointer;
             
-            /* Bloqueo total selección de texto en iOS Safari */
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
@@ -155,7 +154,6 @@
             -webkit-touch-callout: none;
         }
 
-        /* Estados de las Figuritas */
         .sticker.state-tengo {
             background-color: var(--tengo-color) !important;
             border-color: #27ae60;
@@ -176,34 +174,72 @@
             margin-bottom: 15px;
         }
 
-        /* Rediseño para Impresión / PDF */
+        /* ==========================================================================
+           REDiseño de Ultra-Compresión para Impresión / PDF (Ahorro Máximo de Hojas)
+           ========================================================================== */
         @media print {
-            @page { size: A4; margin: 10mm; }
-            body { background-color: #fff; padding: 0; font-size: 12px; }
-            header { background: none !important; color: #000 !important; padding: 0; margin-bottom: 15px; box-shadow: none; }
-            header h1 { font-size: 1.6rem; color: #5c061f; }
-            header .subtitle { font-size: 1rem; color: #333; }
+            @page { 
+                size: A4 portrait; 
+                margin: 6mm; /* Márgenes de página mínimos */
+            }
+            body { 
+                background-color: #fff; 
+                padding: 0; 
+                font-size: 10px;
+            }
+            header { 
+                background: none !important; 
+                color: #000 !important; 
+                padding: 0; 
+                margin-bottom: 10px; 
+                box-shadow: none;
+                text-align: left;
+            }
+            header h1 { font-size: 1.3rem; color: #5c061f; margin: 0; }
+            header .subtitle { font-size: 0.85rem; color: #555; }
             
-            .floating-action-container, .instructions { display: none !important; } 
+            .dashboard-controls, .instructions, .floating-action-container { display: none !important; } 
             
+            /* Súper compresión: Distribución en 3 Columnas */
             .countries-container {
                 display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-                gap: 12px !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 6px !important;
             }
 
             .country-card { 
-                border: 1px solid #ddd !important;
-                border-radius: 8px !important;
-                padding: 10px !important;
+                border: 1px solid #e0e0e0 !important;
+                border-radius: 4px !important;
+                padding: 5px !important;
                 box-shadow: none !important;
                 background: #fff !important;
-                break-inside: avoid !important;
+                break-inside: avoid !important; /* Evita que los países se dividan de página */
+                margin: 0 !important;
             }
 
-            .country-title { font-size: 0.95rem !important; margin-bottom: 8px !important; border-bottom: 2px solid #5c061f !important; }
-            .stickers-grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)) !important; gap: 4px !important; }
-            .sticker { padding: 4px 2px !important; font-size: 0.7rem !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .country-title { 
+                font-size: 0.75rem !important; 
+                margin-bottom: 4px !important; 
+                padding-bottom: 1px !important;
+                border-bottom: 1.5px solid #5c061f !important; 
+                display: block;
+            }
+
+            /* Minimizar el tamaño de cada figurita en el papel */
+            .stickers-grid { 
+                grid-template-columns: repeat(5, 1fr) !important; /* Fuerza 5 figuritas por fila dentro de la columna */
+                gap: 2px !important; 
+            }
+
+            .sticker { 
+                padding: 3px 0 !important; 
+                font-size: 0.6rem !important; 
+                border: 1px solid #ccc !important; 
+                border-radius: 2px !important;
+                background-color: #fafafa !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
         }
     </style>
 </head>
@@ -326,12 +362,13 @@
         function vincularEventoToque(element) {
             element.addEventListener('click', function() {
                 let currentState = parseInt(element.getAttribute('data-state')) || 0;
-                let nextState = (currentState + 1) % 3; // 0 -> 1 -> 2 -> 0
+                let nextState = (currentState + 1) % 3;
                 
                 setStickerState(element, nextState);
             });
         }
 
+        // Modifica estados visuales y atributos
         function setStickerState(element, state) {
             element.setAttribute('data-state', state);
             element.classList.remove('state-tengo', 'state-repetida');
@@ -366,8 +403,9 @@
             window.print();
         }
 
+        // Ejecución
         inicializarStickers();
         actualizarContadores();
     </script>
-</body> 
+</body>
 </html>
