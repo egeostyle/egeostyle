@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ÁLBUM MUNDIAL 2026</title>
-    <!-- Contenedores dinámicos para los metadatos de usuario -->
     <meta name="checklist-user" content="Invitado">
     <meta name="checklist-timestamp" content="">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -41,26 +43,24 @@
         h1 { margin: 0 0 10px 0; font-size: 1.8rem; }
         .subtitle { font-size: 1rem; opacity: 0.9; }
 
-        /* Panel de Carga y Gestión de Archivos en Fila Única */
+        /* Panel de Gestión mediante QR principal */
         .upload-zone {
             background: #eef2f5;
             border: 2px dashed #bdc3c7;
             padding: 12px;
             border-radius: 12px;
             margin-bottom: 15px;
-            display: flex;
-            flex-direction: row !important;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 8px;
             width: 100%;
             box-sizing: border-box;
         }
 
         .btn-upload-label {
-            flex: 1;
             background-color: #7f8c8d;
             color: white;
-            padding: 10px 4px;
+            padding: 12px 4px;
             font-size: 0.85rem;
             font-weight: bold;
             border-radius: 8px;
@@ -68,44 +68,92 @@
             text-align: center;
             white-space: nowrap;
             transition: background 0.2s;
+            border: none;
         }
         .btn-upload-label:hover { background-color: #95a5a6; }
         .btn-upload-label.compare { background-color: var(--info-color); }
         .btn-upload-label.compare:hover { background-color: #e67e22; }
-        .upload-zone input[type="file"] { display: none; }
 
-        /* Panel de Control de Estadísticas */
-        .dashboard-controls {
-            background: var(--card-bg);
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        /* Modales (Cámara y Visor QR) */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
         }
-
-        .stats {
-            display: flex;
-            flex-direction: row !important;
-            justify-content: space-between;
-            gap: 6px;
+        .modal-content-box {
+            background: white;
+            color: #333;
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 360px;
             width: 100%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .modal-content-box h3 { margin-top: 0; margin-bottom: 15px; color: var(--primary-color); }
+        
+        #reader {
+            width: 100%;
+            max-width: 300px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        .stat-box {
-            flex: 1;
-            padding: 10px 4px;
+        /* Contenedor específico del QR optimizado */
+        .qr-display-zone {
+            margin: 15px 0;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        .qr-display-zone img { display: block; }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 15px;
+        }
+        .btn-modal {
+            padding: 10px;
+            border: none;
             border-radius: 8px;
             font-weight: bold;
-            text-align: center;
-            font-size: 0.85rem;
-            border: 1px solid #ddd;
-            white-space: nowrap;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
-        .stat-box.tengo { background-color: rgba(46, 204, 113, 0.15); color: #27ae60; border-color: rgba(46, 204, 113, 0.3); }
-        .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
-        .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
+        .btn-modal.primary { flex: 2; background-color: var(--tengo-color); color: white; }
+        .btn-modal.secondary { flex: 2; background-color: #7f8c8d; color: white; }
+        .btn-modal.danger { background-color: var(--repetida-color); color: white; }
+        .btn-modal.info-btn { background-color: #34495e; color: white; }
+        .btn-modal.info-btn:hover { background-color: #2c3e50; }
+        
+        /* Botón de compartir circular */
+        .btn-modal.share-icon-btn {
+            flex: 1;
+            background-color: #2980b9;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-modal.share-icon-btn:hover { background-color: #3498db; }
+        .btn-modal.share-icon-btn svg { display: block; }
 
-        /* Panel de Resultados de Comparación (Diseño Sobrio) */
+        /* Panel de Resultados de Comparación */
         .comparison-results {
             background: #ffffff;
             border: 1px solid #dcdde1;
@@ -137,6 +185,37 @@
             cursor: pointer;
         }
         .btn-close-compare:hover { background-color: #dcdde1; }
+
+        /* Panel de Control de Estadísticas */
+        .dashboard-controls {
+            background: var(--card-bg);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .stats {
+            display: flex;
+            flex-direction: row !important;
+            justify-content: space-between;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .stat-box {
+            flex: 1;
+            padding: 10px 4px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.85rem;
+            border: 1px solid #ddd;
+            white-space: nowrap;
+        }
+        .stat-box.tengo { background-color: rgba(46, 204, 113, 0.15); color: #27ae60; border-color: rgba(46, 204, 113, 0.3); }
+        .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
+        .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
 
         /* Botonera Flotante Fija Inferior */
         .floating-action-container {
@@ -175,19 +254,10 @@
         .btn-download { background-color: #2980b9; }
         .btn-pdf { background-color: #27ae60; }
 
-        /* Estructura Adaptativa: 1 col móvil, 2 cols escritorio */
-        .countries-container { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
-        }
-
+        /* Estructura Adaptativa */
+        .countries-container { display: flex; flex-direction: column; gap: 20px; }
         @media screen and (min-width: 992px) {
-            .countries-container {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 20px;
-            }
+            .countries-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         }
 
         .country-card { background: var(--card-bg); border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -203,30 +273,14 @@
             font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
-            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+            user-select: none;
         }
-
         .sticker.state-tengo { background-color: var(--tengo-color) !important; border-color: #27ae60; color: white; }
         .sticker.state-repetida { background-color: var(--repetida-color) !important; border-color: #c0392b; color: white; }
 
         .instructions { font-size: 0.8rem; color: #666; text-align: center; margin-bottom: 15px; }
-
-        /* Impresión / PDF */
-        @media print {
-            @page { size: A4 portrait; margin: 6mm; }
-            body { background-color: #fff; padding: 0; font-size: 10px; }
-            header { background: none !important; color: #000 !important; padding: 0; margin-bottom: 10px; box-shadow: none; text-align: left; }
-            header h1 { font-size: 1.3rem; color: #5c061f; margin: 0; }
-            header .subtitle { font-size: 0.85rem; color: #555; }
-            
-            .dashboard-controls, .instructions, .floating-action-container, .upload-zone, .comparison-results { display: none !important; } 
-            
-            .countries-container { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
-            .country-card { border: 1px solid #e0e0e0 !important; border-radius: 4px !important; padding: 5px !important; box-shadow: none !important; background: #fff !important; break-inside: avoid !important; }
-            .country-title { font-size: 0.75rem !important; margin-bottom: 4px !important; border-bottom: 1.5px solid #5c061f !important; display: block; }
-            .stickers-grid { grid-template-columns: repeat(5, 1fr) !important; gap: 2px !important; }
-            .sticker { padding: 3px 0 !important; font-size: 0.6rem !important; border: 1px solid #ccc !important; border-radius: 2px !important; background-color: #fafafa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
+        
+        #qr-file-input { display: none; }
     </style>
 </head>
 <body>
@@ -237,25 +291,46 @@
         <div id="user-tag" style="font-size:0.85rem; margin-top:5px; font-style:italic; opacity:0.8;"></div>
     </header>
 
-    <!-- ZONA DE CARGA DE ARCHIVOS -->
     <div class="upload-zone">
-        <label class="btn-upload-label">
-            Subir Web
-            <input type="file" id="upload-file" accept=".html" onchange="importarProgreso(this, false)">
-        </label>
-        <label class="btn-upload-label compare">
-            Comparar Álbum
-            <input type="file" id="compare-file" accept=".html" onchange="importarProgreso(this, true)">
-        </label>
+        <button class="btn-upload-label" onclick="abrirCamara(false)">📸 Escanear Mi QR</button>
+        <button class="btn-upload-label compare" onclick="abrirCamara(true)">📸 Comparar Álbum</button>
     </div>
 
-    <!-- PANEL DE RESULTADOS DE COMPARACIÓN -->
+    <div id="camera-modal" class="custom-modal">
+        <div class="modal-content-box" style="background: #333; color: white;">
+            <h3 id="camera-modal-title" style="color: white; margin-bottom:15px;">Escanear Código QR</h3>
+            <div id="reader"></div>
+            
+            <button class="btn-modal info-btn" onclick="document.getElementById('qr-file-input').click()" style="margin-top:20px; width:100%;">
+                📁 Subir QR desde mi dispositivo
+            </button>
+            <input type="file" id="qr-file-input" accept="image/*" onchange="procesarQRDesdeArchivo(event)">
+
+            <button class="btn-modal danger" onclick="cerrarCamara()" style="margin-top:10px; width:100%;">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="qr-view-modal" class="custom-modal">
+        <div class="modal-content-box">
+            <h3>Tu Código QR</h3>
+            <p id="qr-meta-details" style="font-size:0.85rem; color:#444; font-weight: bold; margin: 0 0 10px 0; line-height: 1.4;"></p>
+            <div id="qr-display" class="qr-display-zone"></div>
+            <div class="modal-actions">
+                <button class="btn-modal primary" onclick="forzarDescargaQR()">Descargar</button>
+                <button class="btn-modal share-icon-btn" onclick="compartirQR()" title="Compartir">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">  <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5m-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"/></svg>
+                </button>
+                <button class="btn-modal secondary" onclick="cerrarModalQR()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="comparison-results" id="compare-box">
-        <h3 id="compare-title">Resultados de intercambio</h3>
-        <div id="compare-info" style="margin-bottom: 14px; font-size: 0.9rem; color: #444; line-height: 1.5;"></div>
+        <h3>Resultados de intercambio</h3>
+        <div id="compare-info" style="margin-bottom: 14px; font-size: 0.95rem; color: #2f3640; line-height: 1.6;"></div>
         <ul>
-            <li><strong>Figuritas que tu amigo te puede dar (Él las tiene repetidas y tú no las tienes):</strong> <span id="te-da">- Ninguna -</span></li>
-            <li><strong>Figuritas que tú le puedes dar (Tú las tienes repetidas y él no las tiene):</strong> <span id="le-das">- Ninguna -</span></li>
+            <li><strong>Figuritas que tu amigo te puede dar:</strong> <span id="te-da">- Ninguna -</span></li>
+            <li><strong>Figuritas que tú le puedes dar:</strong> <span id="le-das">- Ninguna -</span></li>
         </ul>
         <button class="btn-close-compare" onclick="cerrarComparacion()">Cerrar Resultados</button>
     </div>
@@ -270,15 +345,12 @@
     
     <div class="instructions">💡 <i>Modo de uso: Un toque cambia de estado ( Blanco ➡️ Verde ➡️ Rojo ➡️ Blanco )</i></div>
 
-    <!-- BOTONERA FLOTANTE -->
     <div class="floating-action-container">
-        <button class="btn btn-download" onclick="descargarProgreso()">💾 Guardar Web</button>
+        <button class="btn btn-download" onclick="procesarYMostrarQR()">💾 Guardar QR</button>
         <button class="btn btn-pdf" onclick="exportarPDF()">📄 Exportar a PDF</button>
     </div>
 
-    <div class="countries-container" id="main-container">
-        <!-- El JS rellenará dinámicamente -->
-    </div>
+    <div class="countries-container" id="main-container"></div>
 
     <script>
         const albumData = [
@@ -335,6 +407,10 @@
         ];
 
         const container = document.getElementById('main-container');
+        let html5QrcodeScanner = null;
+        let esModoComparacionGlobal = false;
+        let nombreUsuarioDescarga = "usuario";
+        let ultimoTextoQRGenerado = "";
 
         function inicializarStickers() {
             if (container.children.length === 0) {
@@ -356,7 +432,11 @@
                         sticker.innerText = `${item.prefix}${i}`;
                         sticker.setAttribute('data-state', '0'); 
                         
-                        vincularEventoToque(sticker);
+                        sticker.addEventListener('click', function() {
+                            let currentState = parseInt(sticker.getAttribute('data-state')) || 0;
+                            let nextState = (currentState + 1) % 3;
+                            setStickerState(sticker, nextState);
+                        });
                         grid.appendChild(sticker);
                     }
                     card.appendChild(grid);
@@ -364,14 +444,6 @@
                 });
             }
             mostrarMetadatosPantalla();
-        }
-
-        function vincularEventoToque(element) {
-            element.addEventListener('click', function() {
-                let currentState = parseInt(element.getAttribute('data-state')) || 0;
-                let nextState = (currentState + 1) % 3;
-                setStickerState(element, nextState);
-            });
         }
 
         function setStickerState(element, state) {
@@ -393,122 +465,257 @@
             document.getElementById('count-falta').innerText = faltan;
         }
 
-        function obtenerMetadatosLocales() {
-            return {
-                usuario: document.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Invitado",
-                fecha: document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content') || "Sin fecha"
-            };
-        }
-
         function mostrarMetadatosPantalla() {
-            const miData = obtenerMetadatosLocales();
-            if(miData.fecha !== "Sin fecha") {
-                document.getElementById('user-tag').innerText = `Usuario: ${miData.usuario} | Último guardado: ${miData.fecha}`;
+            const usuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content');
+            const fecha = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content');
+            if(fecha) {
+                const fechaFormat = new Date(parseInt(fecha)).toLocaleString();
+                document.getElementById('user-tag').innerText = `Usuario: ${usuario} | Último guardado: ${fechaFormat}`;
+            } else {
+                document.getElementById('user-tag').innerText = `Usuario: ${usuario}`;
             }
         }
 
-        function descargarProgreso() {
-            let nombreUsuario = prompt("Por favor, introduce tu nombre para personalizar el archivo:", "george");
-            if (nombreUsuario === null) return; 
-            nombreUsuario = nombreUsuario.trim() || "usuario";
+        // 🗜️ COMPRESIÓN BASE36
+        function comprimirEstados(cadenaEstados) {
+            let resultadoCompreso = "";
+            for (let i = 0; i < cadenaEstados.length; i += 5) {
+                let bloque = cadenaEstados.substring(i, i + 5);
+                let valorDecimal = parseInt(bloque, 3);
+                resultadoCompreso += valorDecimal.toString(36) + ".";
+            }
+            return resultadoCompreso.slice(0, -1);
+        }
 
-            const ahora = new Date();
-            const timestamp = ahora.toLocaleString();
+        function descomprimirEstados(stringCompreso) {
+            let partes = stringCompreso.split('.');
+            let cadenaOriginal = "";
+            partes.forEach(p => {
+                let valorDecimal = parseInt(p, 36);
+                let ternario = valorDecimal.toString(3);
+                while (ternario.length < 5) ternario = "0" + ternario;
+                cadenaOriginal += ternario;
+            });
+            return cadenaOriginal;
+        }
+
+        function procesarYMostrarQR() {
+            let nombreUsuario = prompt("Introduce tu nombre:", "");
+            if (nombreUsuario === null) return; 
+            nombreUsuario = nombreUsuario.trim() || "Invitado";
+            nombreUsuarioDescarga = nombreUsuario;
+
+            const timestampReducido = Date.now();
+            const fechaFormateada = new Date(timestampReducido).toLocaleString();
 
             document.querySelector('meta[name="checklist-user"]').setAttribute('content', nombreUsuario);
-            document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', timestamp);
+            document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', timestampReducido);
 
-            const htmlCompleto = document.documentElement.outerHTML;
-            const blob = new Blob([htmlCompleto], { type: "text/html;charset=utf-8" });
+            let cadenaEstadosPuros = "";
+            document.querySelectorAll('.sticker').forEach(st => {
+                cadenaEstadosPuros += (st.getAttribute('data-state') || '0');
+            });
+
+            const mapaCompactado = comprimirEstados(cadenaEstadosPuros);
+            ultimoTextoQRGenerado = `${nombreUsuario}|${timestampReducido}|${mapaCompactado}`;
+
+            document.getElementById('qr-meta-details').innerText = `Usuario: ${nombreUsuario}\nFecha: ${fechaFormateada}`;
+
+            const displayZone = document.getElementById('qr-display');
+            displayZone.innerHTML = "";
             
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `${nombreUsuario.toLowerCase().replace(/[^a-z0-9]/g, "-")}-checklist.html`;
-            link.click();
-            
-            mostrarMetadatosPantalla();
+            new QRCode(displayZone, {
+                text: ultimoTextoQRGenerado,
+                width: 240,
+                height: 240,
+                correctLevel: QRCode.CorrectLevel.L
+            });
+
+            document.getElementById('qr-view-modal').style.display = 'flex';
         }
 
-        function importarProgreso(input, esComparacion) {
-            const file = input.files[0];
+        async function compartirQR() {
+            const imgElement = document.getElementById('qr-display').querySelector('img');
+            if (!imgElement) return;
+
+            try {
+                const response = await fetch(imgElement.src);
+                const blob = await response.blob();
+                const file = new File([blob], `${nombreUsuarioDescarga}-album.png`, { type: 'image/png' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Mi Álbum Mundial 2026',
+                        text: `¡Mira el progreso de mi álbum!`
+                    });
+                } else if (navigator.share) {
+                    await navigator.share({
+                        title: 'Mi Progreso Álbum',
+                        text: ultimoTextoQRGenerado
+                    });
+                } else {
+                    throw new Error("No compatible");
+                }
+            } catch (err) {
+                navigator.clipboard.writeText(ultimoTextoQRGenerado);
+                alert("Hemos copiado los datos de tu QR al portapapeles.");
+            }
+        }
+
+        function forzarDescargaQR() {
+            const imgElement = document.getElementById('qr-display').querySelector('img');
+            if(imgElement) {
+                const link = document.createElement("a");
+                link.href = imgElement.src;
+                link.download = `${nombreUsuarioDescarga.toLowerCase().replace(/[^a-z0-9]/g, "-")}-qr.png`;
+                link.click();
+                cerrarModalQR();
+                mostrarMetadatosPantalla();
+            }
+        }
+
+        function cerrarModalQR() { document.getElementById('qr-view-modal').style.display = 'none'; }
+
+        function abrirCamara(esComparacion) {
+            esModoComparacionGlobal = esComparacion;
+            const tituloModal = document.getElementById('camera-modal-title');
+            tituloModal.innerText = esComparacion ? "Comparar Álbum (Escanear o Subir)" : "Escanear Mi Código QR";
+            
+            document.getElementById('camera-modal').style.display = 'flex';
+            
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                fps: 15, 
+                qrbox: { width: 220, height: 220 } 
+            }, false);
+            
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function cerrarCamara() {
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    document.getElementById('camera-modal').style.display = 'none';
+                }).catch(() => {
+                    document.getElementById('camera-modal').style.display = 'none';
+                });
+            } else {
+                document.getElementById('camera-modal').style.display = 'none';
+            }
+        }
+
+        function procesarQRDesdeArchivo(event) {
+            const file = event.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(e.target.result, 'text/html');
+            const html5QrCode = new Html5Qrcode("reader");
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    escanearArchivoEstatico(html5QrCode, file);
+                }).catch(() => {
+                    escanearArchivoEstatico(html5QrCode, file);
+                });
+            } else {
+                escanearArchivoEstatico(html5QrCode, file);
+            }
+        }
+
+        function escanearArchivoEstatico(lector, archivo) {
+            lector.scanFile(archivo, true)
+                .then(decodedText => {
+                    document.getElementById('qr-file-input').value = ""; 
+                    document.getElementById('camera-modal').style.display = 'none'; 
+                    onScanSuccess(decodedText); 
+                })
+                .catch(err => {
+                    alert("No se pudo detectar un código QR válido en la imagen. Asegúrate de que la captura se vea nítida.");
+                    document.getElementById('qr-file-input').value = "";
+                });
+        }
+
+        function onScanSuccess(decodedText) {
+            if(document.getElementById('camera-modal').style.display !== 'none') {
+                 document.getElementById('camera-modal').style.display = 'none';
+            }
+            
+            const partes = decodedText.split('|');
+            if(partes.length !== 3) {
+                alert("QR corrupto o no compatible.");
+                return;
+            }
+
+            let qrUsuario = partes[0].trim();
+            const qrTimestamp = partes[1];
+            const cadenaEstados = descomprimirEstados(partes[2]);
+            const misStickers = document.querySelectorAll('.sticker');
+
+            if (!esModoComparacionGlobal) {
+                document.querySelector('meta[name="checklist-user"]').setAttribute('content', qrUsuario);
+                document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', qrTimestamp);
+
+                misStickers.forEach((miSticker, indice) => {
+                    if(indice < cadenaEstados.length) {
+                        setStickerState(miSticker, parseInt(cadenaEstados.charAt(indice)));
+                    }
+                });
+                mostrarMetadatosPantalla();
+                alert(`¡Progreso de ${qrUsuario} cargado correctamente!`);
+            } else {
+                // LÓGICA DE COMPARACIÓN CORREGIDA Y PERSONALIZADA
+                let miUsuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Invitado";
+                const miTimestamp = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content') || "";
                 
-                if (!doc.getElementById('main-container')) {
-                    alert("Archivo no válido. Asegúrate de subir un HTML exportado por este sistema.");
-                    return;
-                }
-
-                if (!esComparacion) {
-                    const metaUser = doc.querySelector('meta[name="checklist-user"]').getAttribute('content');
-                    const metaTime = doc.querySelector('meta[name="checklist-timestamp"]').getAttribute('content');
-                    document.querySelector('meta[name="checklist-user"]').setAttribute('content', metaUser);
-                    document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', metaTime);
-
-                    doc.querySelectorAll('.sticker').forEach(stickerRemoto => {
-                        const miSticker = document.getElementById(stickerRemoto.id);
-                        if (miSticker) {
-                            const estado = stickerRemoto.getAttribute('data-state') || '0';
-                            setStickerState(miSticker, parseInt(estado));
-                        }
-                    });
-                    mostrarMetadatosPantalla();
-                    alert("¡Tu checklist ha sido cargado con éxito!");
+                let lineaMiUsuario = "";
+                if (miUsuario === "Invitado") {
+                    const ahora = new Date().toLocaleString();
+                    lineaMiUsuario = `• <strong>Tú:</strong> ${ahora} <span style="color:#e74c3c; font-size:0.85rem; font-weight:normal;">( datos no guardados, recuerda guardar tu progreso antes de salir )</span>`;
                 } else {
-                    // Extraer info de ambos usuarios para el panel sobrio de comparación
-                    const miData = obtenerMetadatosLocales();
-                    const amigoUser = doc.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Amigo";
-                    const amigoTime = doc.querySelector('meta[name="checklist-timestamp"]').getAttribute('content') || "Sin fecha";
-                    
-                    let teDa = [];
-                    let leDas = [];
-
-                    document.querySelectorAll('.sticker').forEach(miSticker => {
-                        const stickerAmigo = doc.getElementById(miSticker.id);
-                        if (stickerAmigo) {
-                            const miEstado = parseInt(miSticker.getAttribute('data-state')) || 0;
-                            const amigoEstado = parseInt(stickerAmigo.getAttribute('data-state')) || 0;
-                            const codigoFigurita = miSticker.innerText;
-
-                            if (amigoEstado === 2 && miEstado === 0) {
-                                teDa.push(codigoFigurita);
-                            }
-                            if (miEstado === 2 && amigoEstado === 0) {
-                                leDas.push(codigoFigurita);
-                            }
-                        }
-                    });
-
-                    // Modificación del bloque informativo con los metadatos cruzados de ambos
-                    document.getElementById('compare-info').innerHTML = `
-                        • <strong>Usuario 1 (${miData.usuario}):</strong> Archivo guardado el ${miData.fecha}<br>
-                        • <strong>Usuario 2 (${amigoUser}):</strong> Archivo guardado el ${amigoTime}
-                    `;
-                    
-                    document.getElementById('te-da').innerText = teDa.length > 0 ? teDa.join(', ') : 'Ninguna.';
-                    document.getElementById('le-das').innerText = leDas.length > 0 ? leDas.join(', ') : 'Ninguna.';
-                    document.getElementById('compare-box').style.display = 'block';
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    const miFechaFormat = miTimestamp ? new Date(parseInt(miTimestamp)).toLocaleString() : new Date().toLocaleString();
+                    lineaMiUsuario = `• <strong>${miUsuario}:</strong> Guardado el ${miFechaFormat}`;
                 }
-                input.value = ""; 
-            };
-            reader.readAsText(file);
+
+                let lineaAmigo = "";
+                const amigoFechaFormat = new Date(parseInt(qrTimestamp)).toLocaleString();
+                if (qrUsuario === "Invitado") {
+                    lineaAmigo = `• <strong>Tú (Amigo):</strong> Guardado el ${amigoFechaFormat}`;
+                } else {
+                    lineaAmigo = `• <strong>${qrUsuario}:</strong> Guardado el ${amigoFechaFormat}`;
+                }
+
+                let teDa = [];
+                let leDas = [];
+
+                misStickers.forEach((miSticker, indice) => {
+                    if(indice < cadenaEstados.length) {
+                        const miEstado = parseInt(miSticker.getAttribute('data-state')) || 0;
+                        const amigoEstado = parseInt(cadenaEstados.charAt(indice));
+                        const codigoFigurita = miSticker.innerText;
+
+                        if (amigoEstado === 2 && miEstado === 0) teDa.push(codigoFigurita);
+                        if (miEstado === 2 && amigoEstado === 0) leDas.push(codigoFigurita);
+                    }
+                });
+
+                document.getElementById('compare-info').innerHTML = `
+                    ${lineaMiUsuario}<br>
+                    ${lineaAmigo}
+                `;
+                
+                document.getElementById('te-da').innerText = teDa.length > 0 ? teDa.join(', ') : 'Ninguna.';
+                document.getElementById('le-das').innerText = leDas.length > 0 ? leDas.join(', ') : 'Ninguna.';
+                document.getElementById('compare-box').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
-        function cerrarComparacion() {
-            document.getElementById('compare-box').style.display = 'none';
-        }
+        function onScanFailure() {}
+        function cerrarComparacion() { document.getElementById('compare-box').style.display = 'none'; }
+        function exportarPDF() { window.print(); }
 
-        function exportarPDF() {
-            window.print();
-        }
-
-        inicializarStickers();
-        actualizarContadores();
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarStickers();
+            actualizarContadores();
+        });
     </script>
 </body>
 </html>
