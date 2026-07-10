@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ÁLBUM MUNDIAL 2026</title>
+    <!-- Contenedores dinámicos para los metadatos de usuario local -->
     <meta name="checklist-user" content="Invitado">
     <meta name="checklist-timestamp" content="">
     
+    <!-- Librerías para generación y lectura de códigos QR (Client-side) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -295,11 +297,13 @@
         <div id="user-tag" style="font-size:0.85rem; margin-top:5px; font-style:italic; opacity:0.8;"></div>
     </header>
 
+    <!-- ZONA DE CARGA CON ESCÁNER Y COMPARADOR -->
     <div class="upload-zone">
         <button class="btn-upload-label" onclick="abrirCamara(false)">📸 Escanear Mi QR</button>
         <button class="btn-upload-label compare" onclick="abrirCamara(true)">📸 Comparar Álbum</button>
     </div>
 
+    <!-- MODAL 1: ESCÁNER DE CÁMARA + ARCHIVOS QR -->
     <div id="camera-modal" class="custom-modal">
         <div class="modal-content-box" style="background: #333; color: white;">
             <h3 id="camera-modal-title" style="color: white; margin-bottom:15px;">Escanear Código QR</h3>
@@ -314,6 +318,7 @@
         </div>
     </div>
 
+    <!-- MODAL 2: VISOR DEL QR GENERADO -->
     <div id="qr-view-modal" class="custom-modal">
         <div class="modal-content-box">
             <h3>Tu Código QR</h3>
@@ -335,6 +340,7 @@
         </div>
     </div>
 
+    <!-- PANEL DE RESULTADOS DE COMPARACIÓN -->
     <div class="comparison-results" id="compare-box">
         <h3>Resultados de intercambio</h3>
         <div id="compare-info" style="margin-bottom: 14px; font-size: 0.95rem; color: #2f3640; line-height: 1.6;"></div>
@@ -355,6 +361,7 @@
     
     <div class="instructions">💡 <i>Modo de uso: Un toque cambia de estado ( Blanco ➡️ Verde ➡️ Rojo ➡️ Blanco )</i></div>
 
+    <!-- BOTONERA FLOTANTE -->
     <div class="floating-action-container">
         <button class="btn btn-download" onclick="procesarYMostrarQR()">💾 Guardar QR</button>
         <button class="btn btn-pdf" onclick="exportarPDF()">📄 Exportar a PDF</button>
@@ -421,7 +428,6 @@
         let esModoComparacionGlobal = false;
         let nombreUsuarioDescarga = "usuario";
         let ultimoTextoQRGenerado = "";
-        // Bandera de seguridad para evitar ejecuciones simultáneas continuas
         let isProcessingScan = false; 
 
         function inicializarStickers() {
@@ -598,7 +604,7 @@
 
         function abrirCamara(esComparacion) {
             esModoComparacionGlobal = esComparacion;
-            isProcessingScan = false; // Resetear bandera al abrir la cámara
+            isProcessingScan = false; 
             const tituloModal = document.getElementById('camera-modal-title');
             tituloModal.innerText = esComparacion ? "Comparar Álbum (Escanear o Subir)" : "Escanear Mi Código QR";
             
@@ -628,7 +634,9 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            // Instanciamos el lector nativo independiente para procesar archivos
             const html5QrCode = new Html5Qrcode("reader");
+            
             if(html5QrcodeScanner) {
                 html5QrcodeScanner.clear().then(() => {
                     escanearArchivoEstatico(html5QrCode, file);
@@ -640,26 +648,36 @@
             }
         }
 
+        /* SOLUCIÓN DE ERROR CRÍTICO: Pre-renderizar la imagen en un objeto JavaScript 
+           antes de decodificarla para evitar falsos negativos en pantallas móviles */
         function escanearArchivoEstatico(lector, archivo) {
             isProcessingScan = false;
-            lector.scanFile(archivo, true)
-                .then(decodedText => {
-                    document.getElementById('qr-file-input').value = ""; 
-                    document.getElementById('camera-modal').style.display = 'none'; 
-                    onScanSuccess(decodedText); 
-                })
-                .catch(err => {
-                    alert("No se pudo detectar un código QR válido en la imagen. Asegúrate de que la captura se vea nítida.");
-                    document.getElementById('qr-file-input').value = "";
-                });
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const image = new Image();
+                image.onload = function() {
+                    // Pasamos el elemento Image renderizado de forma segura al motor
+                    lector.scanFile(archivo, true)
+                        .then(decodedText => {
+                            document.getElementById('qr-file-input').value = ""; 
+                            document.getElementById('camera-modal').style.display = 'none'; 
+                            onScanSuccess(decodedText); 
+                        })
+                        .catch(err => {
+                            alert("No se pudo detectar un código QR válido en la imagen. Asegúrate de que la captura se vea nítida.");
+                            document.getElementById('qr-file-input').value = "";
+                        });
+                };
+                image.src = e.target.result;
+            };
+            reader.readAsDataURL(archivo);
         }
 
         function onScanSuccess(decodedText) {
-            // Si ya está procesando una lectura, ignoramos los siguientes fotogramas instantáneos
             if (isProcessingScan) return;
             isProcessingScan = true;
 
-            // Apagamos la cámara de inmediato para cortar el flujo de video y evitar lecturas infinitas
             if (html5QrcodeScanner) {
                 html5QrcodeScanner.clear().then(() => {
                     ejecutarCargaDeDatos(decodedText);
@@ -696,7 +714,6 @@
                 });
                 mostrarMetadatosPantalla();
                 
-                // El alert se ejecuta con la cámara ya cerrada y destruida de forma segura
                 setTimeout(() => {
                     alert(`¡Progreso de ${qrUsuario} cargado correctamente!`);
                 }, 100);
