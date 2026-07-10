@@ -634,7 +634,6 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            // Instanciamos el lector nativo independiente para procesar archivos
             const html5QrCode = new Html5Qrcode("reader");
             
             if(html5QrcodeScanner) {
@@ -648,8 +647,7 @@
             }
         }
 
-        /* SOLUCIÓN DE ERROR CRÍTICO: Pre-renderizar la imagen en un objeto JavaScript 
-           antes de decodificarla para evitar falsos negativos en pantallas móviles */
+        /* MODIFICACIÓN CRÍTICA: Normalizado forzado en Canvas antes de decodificar */
         function escanearArchivoEstatico(lector, archivo) {
             isProcessingScan = false;
             
@@ -657,17 +655,44 @@
             reader.onload = function(e) {
                 const image = new Image();
                 image.onload = function() {
-                    // Pasamos el elemento Image renderizado de forma segura al motor
-                    lector.scanFile(archivo, true)
-                        .then(decodedText => {
-                            document.getElementById('qr-file-input').value = ""; 
-                            document.getElementById('camera-modal').style.display = 'none'; 
-                            onScanSuccess(decodedText); 
-                        })
-                        .catch(err => {
-                            alert("No se pudo detectar un código QR válido en la imagen. Asegúrate de que la captura se vea nítida.");
-                            document.getElementById('qr-file-input').value = "";
-                        });
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    const MAX_WIDTH = 500;
+                    const MAX_HEIGHT = 500;
+                    let width = image.width;
+                    let height = image.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(image, 0, 0, width, height);
+                    
+                    canvas.toBlob((blob) => {
+                        const archivoOptimizado = new File([blob], archivo.name, { type: "image/png" });
+                        
+                        lector.scanFile(archivoOptimizado, true)
+                            .then(decodedText => {
+                                document.getElementById('qr-file-input').value = ""; 
+                                document.getElementById('camera-modal').style.display = 'none'; 
+                                onScanSuccess(decodedText); 
+                            })
+                            .catch(err => {
+                                alert("No se pudo detectar un código QR válido. Asegúrate de que no tenga recortes excesivos o prueba subiendo una captura de pantalla directa.");
+                                document.getElementById('qr-file-input').value = "";
+                            });
+                    }, "image/png");
                 };
                 image.src = e.target.result;
             };
