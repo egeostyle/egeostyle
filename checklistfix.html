@@ -498,7 +498,6 @@
             return resultadoCompreso.slice(0, -1);
         }
 
-        function '../../../'
         function descomprimirEstados(stringCompreso) {
             let partes = stringCompreso.split('.');
             let cadenaOriginal = "";
@@ -537,7 +536,6 @@
             const displayZone = document.getElementById('qr-display');
             displayZone.innerHTML = "";
             
-            // RENDIMIENTO: Usamos nivel H para máxima tolerancia a fallos
             new QRCode(displayZone, {
                 text: ultimoTextoQRGenerado,
                 width: 300,
@@ -557,7 +555,6 @@
                              style="display:block; width:240px; height:240px;"/>
                     `;
 
-                    // Botón de descarga forzada para evitar distorsiones del sistema operativo móvil
                     const btnDescarga = document.getElementById('btn-descarga-directa');
                     btnDescarga.onclick = () => {
                         const link = document.createElement('a');
@@ -595,7 +592,7 @@
                     throw new Error("No compatible");
                 }
             } catch (err) {
-                navigator.clipboard.writeText(ultimoTextoQRGenerado);
+                navigator.clipboard.writeText(ultimoTextoQRGenerated);
                 alert("Hemos copiado los datos en texto de tu QR al portapapeles.");
             }
         }
@@ -650,7 +647,6 @@
             }
         }
 
-        /* RENDIMIENTO: Canvas con fondo sólido y dimensiones cuadradas optimizadas */
         function escanearArchivoEstatico(lector, archivo) {
             isProcessingScan = false;
             
@@ -664,11 +660,8 @@
                     canvas.width = 600;
                     canvas.height = 600;
                     
-                    // Forzar contraste blanco puro de fondo
                     ctx.fillStyle = "#FFFFFF";
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
-                    // Centrar y dibujar la imagen para que el algoritmo lo lea de inmediato
                     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
                     
                     canvas.toBlob((blob) => {
