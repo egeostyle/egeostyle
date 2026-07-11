@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ÁLBUM MUNDIAL 2026</title>
-    <!-- Contenedores dinámicos para los metadatos de usuario local -->
     <meta name="checklist-user" content="Invitado">
     <meta name="checklist-timestamp" content="">
     
-    <!-- Librerías para generación y lectura de códigos QR (Client-side) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
             --text-color: #333333;
-            --primary-color: #5c061f; /* Color guinda FIFA */
+            --primary-color: #5c061f; 
             --tengo-color: #2ecc71;
             --repetida-color: #e74c3c;
             --falta-color: #bdc3c7;
@@ -45,38 +44,36 @@
         h1 { margin: 0 0 10px 0; font-size: 1.8rem; }
         .subtitle { font-size: 1rem; opacity: 0.9; }
 
-        /* Panel de Gestión mediante QR principal */
         .upload-zone {
             background: #eef2f5;
             border: 2px dashed #bdc3c7;
             padding: 12px;
             border-radius: 12px;
             margin-bottom: 15px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            display: flex;
+            gap: 10px;
             width: 100%;
             box-sizing: border-box;
         }
 
         .btn-upload-label {
+            flex: 1;
             background-color: #7f8c8d;
             color: white;
-            padding: 12px 4px;
+            padding: 12px 6px;
             font-size: 0.85rem;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
             text-align: center;
-            white-space: nowrap;
             transition: background 0.2s;
             border: none;
+            white-space: nowrap;
         }
         .btn-upload-label:hover { background-color: #95a5a6; }
         .btn-upload-label.compare { background-color: var(--info-color); }
         .btn-upload-label.compare:hover { background-color: #e67e22; }
 
-        /* Modales (Cámara y Visor QR) */
         .custom-modal {
             display: none;
             position: fixed;
@@ -102,6 +99,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            box-sizing: border-box;
         }
         .modal-content-box h3 { margin-top: 0; margin-bottom: 15px; color: var(--primary-color); }
         
@@ -113,9 +111,8 @@
             overflow: hidden;
         }
 
-        /* Contenedor del QR optimizado */
         .qr-display-zone {
-            margin: 15px 0;
+            margin: 10px 0;
             padding: 10px;
             background: #fff;
             border: 1px solid #eee;
@@ -123,44 +120,44 @@
         }
         .qr-display-zone img { 
             display: block !important; 
-            width: 240px; 
-            height: 240px; 
-            user-select: auto !important;
-            -webkit-user-select: auto !important;
+            width: 180px; 
+            height: 180px; 
         }
         .qr-display-zone canvas { display: none !important; }
 
-        .modal-actions {
+        .modal-actions-grid {
             display: flex;
             flex-direction: column;
             gap: 10px;
             width: 100%;
-            margin-top: 15px;
+            margin-top: 10px;
         }
+        .grid-row-full { width: 100%; }
+        .grid-row-split {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        .grid-row-split .btn-modal { flex: 1; }
+
         .btn-modal {
-            padding: 12px;
+            padding: 11px;
             border: none;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             width: 100%;
+            box-sizing: border-box;
+            display: inline-block;
         }
-        .btn-modal.primary { background-color: #27ae60; color: white; }
-        .btn-modal.secondary { background-color: #7f8c8d; color: white; }
-        .btn-modal.danger { background-color: var(--repetida-color); color: white; }
-        .btn-modal.info-btn { background-color: #34495e; color: white; }
-        
-        .btn-modal.share-icon-btn {
-            background-color: #2980b9;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+        .btn-modal.f1 { background-color: #2980b9; color: white; }
+        .btn-modal.f2 { background-color: #27ae60; color: white; }
+        .btn-modal.f3-qr { background-color: #8e44ad; color: white; }
+        .btn-modal.f3-ln { background-color: #d35400; color: white; }
+        .btn-modal.f4 { background-color: #7f8c8d; color: white; }
+        .btn-modal.link-inside { background-color: #2c3e50; color: white; border: 2px dashed #3498db; }
 
-        /* Panel de Resultados de Comparación */
         .comparison-results {
             background: #ffffff;
             border: 1px solid #dcdde1;
@@ -172,28 +169,13 @@
             display: none;
         }
         .comparison-results h3 { 
-            margin-top: 0; 
-            margin-bottom: 12px;
-            color: var(--primary-color); 
-            font-size: 1.1rem;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 6px;
+            margin-top: 0; margin-bottom: 12px;
+            color: var(--primary-color); font-size: 1.1rem;
+            border-bottom: 1px solid #eee; padding-bottom: 6px;
         }
         .comparison-results ul { margin: 0 0 15px 0; padding-left: 20px; }
         .comparison-results li { margin-bottom: 8px; font-size: 0.9rem; line-height: 1.4; }
-        .btn-close-compare {
-            background-color: #f5f6fa;
-            border: 1px solid #c2c2c2;
-            color: #333;
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-close-compare:hover { background-color: #dcdde1; }
-
-        /* Panel de Control de Estadísticas */
+        
         .dashboard-controls {
             background: var(--card-bg);
             padding: 12px;
@@ -201,30 +183,16 @@
             margin-bottom: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-
-        .stats {
-            display: flex;
-            flex-direction: row !important;
-            justify-content: space-between;
-            gap: 6px;
-            width: 100%;
-        }
-
+        .stats { display: flex; flex-direction: row; justify-content: space-between; gap: 6px; width: 100%; }
         .stat-box {
-            flex: 1;
-            padding: 10px 4px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-align: center;
-            font-size: 0.85rem;
-            border: 1px solid #ddd;
-            white-space: nowrap;
+            flex: 1; padding: 10px 4px; border-radius: 8px;
+            font-weight: bold; text-align: center; font-size: 0.85rem;
+            border: 1px solid #ddd; white-space: nowrap;
         }
         .stat-box.tengo { background-color: rgba(46, 204, 113, 0.15); color: #27ae60; border-color: rgba(46, 204, 113, 0.3); }
         .stat-box.repetida { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; border-color: rgba(231, 76, 60, 0.3); }
         .stat-box.falta { background-color: rgba(189, 195, 199, 0.2); color: #7f8c8d; }
 
-        /* Botonera Flotante Fija Inferior */
         .floating-action-container {
             position: fixed;
             bottom: 20px;
@@ -238,28 +206,30 @@
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
             z-index: 1000;
             backdrop-filter: blur(5px);
-            width: calc(100% - 60px);
-            max-width: 400px;
-            justify-content: center;
+            width: calc(100% - 40px);
+            max-width: 360px;
+            box-sizing: border-box;
         }
 
         .btn {
+            flex: 1;
             color: white;
             border: none;
-            padding: 10px 18px;
+            padding: 12px;
             font-size: 0.9rem;
             font-weight: bold;
             border-radius: 25px;
             cursor: pointer;
-            transition: transform 0.1s, background 0.2s;
+            transition: transform 0.1s;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
             white-space: nowrap;
         }
         .btn:active { transform: scale(0.95); }
         .btn-download { background-color: #2980b9; }
-        .btn-pdf { background-color: #27ae60; }
+        .btn-pdf { background-color: #e67e22; }
 
         .countries-container { display: flex; flex-direction: column; gap: 20px; }
         @media screen and (min-width: 992px) {
@@ -271,21 +241,14 @@
         
         .stickers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 6px; }
         .sticker {
-            background-color: #f0f3f5;
-            border: 2px solid #dcdde1;
-            border-radius: 6px;
-            padding: 10px 4px;
-            text-align: center;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            user-select: none;
+            background-color: #f0f3f5; border: 2px solid #dcdde1; border-radius: 6px;
+            padding: 10px 4px; text-align: center; font-size: 0.8rem;
+            font-weight: 600; cursor: pointer; user-select: none;
         }
         .sticker.state-tengo { background-color: var(--tengo-color) !important; border-color: #27ae60; color: white; }
         .sticker.state-repetida { background-color: var(--repetida-color) !important; border-color: #c0392b; color: white; }
 
         .instructions { font-size: 0.8rem; color: #666; text-align: center; margin-bottom: 15px; }
-        
         #qr-file-input { display: none; }
     </style>
 </head>
@@ -297,52 +260,61 @@
         <div id="user-tag" style="font-size:0.85rem; margin-top:5px; font-style:italic; opacity:0.8;"></div>
     </header>
 
-    <!-- ZONA DE CARGA CON ESCÁNER Y COMPARADOR -->
     <div class="upload-zone">
-        <button class="btn-upload-label" onclick="abrirCamara(false)">📸 Escanear Mi QR</button>
-        <button class="btn-upload-label compare" onclick="abrirCamara(true)">📸 Comparar Álbum</button>
+        <button class="btn-upload-label" onclick="abrirCamara(false)">📸 Escanear QR</button>
+        <button class="btn-upload-label compare" onclick="abrirCamara(true)">📸 Comparar QR / Enlace</button>
     </div>
 
-    <!-- MODAL 1: ESCÁNER DE CÁMARA + ARCHIVOS QR -->
+    <!-- MODAL PRINCIPAL DE ESCÁNER -->
     <div id="camera-modal" class="custom-modal">
-        <div class="modal-content-box" style="background: #333; color: white;">
-            <h3 id="camera-modal-title" style="color: white; margin-bottom:15px;">Escanear Código QR</h3>
+        <div class="modal-content-box" style="background: #222; color: white; max-width: 380px;">
+            <h3 id="camera-modal-title" style="color: white; margin-bottom:12px;">Escanear Código</h3>
             <div id="reader"></div>
-            
-            <button class="btn-modal info-btn" onclick="document.getElementById('qr-file-input').click()" style="margin-top:20px;">
-                📁 Subir QR desde mi dispositivo
-            </button>
+            <button id="btn-inside-compare-link" class="btn-modal link-inside" onclick="compararPorEnlace()" style="margin-top:15px; display:none;">🔗 Pegar y Comparar Enlace</button>
+            <button class="btn-modal" onclick="document.getElementById('qr-file-input').click()" style="margin-top:15px; background-color:#444; color:white;">📁 Subir QR desde dispositivo</button>
             <input type="file" id="qr-file-input" accept="image/*" onchange="procesarQRDesdeArchivo(event)">
-
-            <button class="btn-modal danger" onclick="cerrarCamara()" style="margin-top:10px;">Cancelar</button>
+            <button class="btn-modal f4" onclick="cerrarCamara()" style="margin-top:10px;">Cancelar</button>
         </div>
     </div>
 
-    <!-- MODAL 2: VISOR DEL QR GENERADO -->
+    <!-- MODAL DE GUARDAR ORGANIZADO EN FILAS -->
     <div id="qr-view-modal" class="custom-modal">
         <div class="modal-content-box">
-            <h3>Tu Código QR</h3>
-            <p id="qr-meta-details" style="font-size:0.85rem; color:#444; font-weight: bold; margin: 0; line-height: 1.4;"></p>
+            <h3>Tu Progreso Guardado</h3>
+            <p id="qr-meta-details" style="font-size:0.8rem; color:#444; margin: 0; line-height: 1.3;"></p>
             
             <div id="qr-display" class="qr-display-zone"></div>
             
-            <div class="modal-actions">
-                <button class="btn-modal primary" id="btn-descarga-directa">💾 Descargar Código QR</button>
-                <button class="btn-modal share-icon-btn" onclick="compartirQR()">Compartir</button>
-                <button class="btn-modal secondary" onclick="cerrarModalQR()">Cerrar</button>
+            <div class="modal-actions-grid">
+                <!-- Fila 1 -->
+                <div class="grid-row-full">
+                    <button class="btn-modal f1" id="btn-descarga-directa">💾 Descargar QR</button>
+                </div>
+                <!-- Fila 2 -->
+                <div class="grid-row-full">
+                    <button class="btn-modal f2" onclick="copiarEnlaceAlPortapapeles()">🔗 Copiar Enlace</button>
+                </div>
+                <!-- Fila 3 -->
+                <div class="grid-row-split">
+                    <button class="btn-modal f3-qr" onclick="compartirQR()">Compartir QR</button>
+                    <button class="btn-modal f3-ln" onclick="compartirEnlaceNativo()">Compartir Enlace</button>
+                </div>
+                <!-- Fila 4 -->
+                <div class="grid-row-full">
+                    <button class="btn-modal f4" onclick="cerrarModalQR()">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- PANEL DE RESULTADOS DE COMPARACIÓN -->
     <div class="comparison-results" id="compare-box">
         <h3>Resultados de intercambio</h3>
-        <div id="compare-info" style="margin-bottom: 14px; font-size: 0.95rem; color: #2f3640; line-height: 1.6;"></div>
+        <div id="compare-info" style="margin-bottom: 14px; font-size: 0.95rem; line-height: 1.6;"></div>
         <ul>
             <li><strong>Figuritas que tu amigo te puede dar:</strong> <span id="te-da">- Ninguna -</span></li>
             <li><strong>Figuritas que tú le puedes dar:</strong> <span id="le-das">- Ninguna -</span></li>
         </ul>
-        <button class="btn-close-compare" onclick="cerrarComparacion()">Cerrar Resultados</button>
+        <button class="btn-upload-label" onclick="document.getElementById('compare-box').style.display='none'" style="background:#7f8c8d; max-width:100px; padding:6px;">Cerrar</button>
     </div>
 
     <div class="dashboard-controls">
@@ -353,12 +325,12 @@
         </div>
     </div>
     
-    <div class="instructions">💡 <i>Modo de uso: Un toque cambia de estado ( Blanco ➡️ Verde ➡️ Rojo ➡️ Blanco )</i></div>
+    <div class="instructions">💡 Un toque cambia el estado ( Blanco ➡️ Verde ➡️ Rojo ➡️ Blanco )</div>
 
     <!-- BOTONERA FLOTANTE -->
     <div class="floating-action-container">
-        <button class="btn btn-download" onclick="procesarYMostrarQR()">💾 Guardar QR</button>
-        <button class="btn btn-pdf" onclick="exportarPDF()">📄 Exportar a PDF</button>
+        <button class="btn btn-download" onclick="procesarYMostrarQR()">💾 Guardar</button>
+        <button class="btn btn-pdf" onclick="exportarAPDF()">📄 Exportar a PDF</button>
     </div>
 
     <div class="countries-container" id="main-container"></div>
@@ -390,7 +362,7 @@
             { country: "Japón (JPN)", prefix: "JPN", count: 20 },
             { country: "Suecia (SWE)", prefix: "SWE", count: 20 },
             { country: "Túnez (TUN)", prefix: "TUN", count: 20 },
-            { country: "Bélgica (BEL)", prefix: "BEL", count: 20 },
+            { background: "Bélgica (BEL)", prefix: "BEL", country: "Bélgica (BEL)", count: 20 },
             { country: "Egipto (EGY)", prefix: "EGY", count: 20 },
             { country: "Irán (IRN)", prefix: "IRN", count: 20 },
             { country: "Nueva Zelanda (NZL)", prefix: "NZL", count: 20 },
@@ -420,9 +392,37 @@
         const container = document.getElementById('main-container');
         let html5QrcodeScanner = null;
         let esModoComparacionGlobal = false;
-        let nombreUsuarioDescarga = "usuario";
-        let ultimoTextoQRGenerado = "";
-        let isProcessingScan = false; 
+        let nombreUsuarioGlobal = "Invitado";
+        let hashCompresoCompartir = ""; 
+        let isProcessingScan = false;
+
+        // ALTA COMPRESIÓN BIT-PACKING DE ESTADOS (0,1,2)
+        function packBits(estadoString) {
+            let buffer = [];
+            let currentByte = 0;
+            let bitCount = 0;
+            for (let i = 0; i < estadoString.length; i++) {
+                let val = parseInt(estadoString[i]) || 0;
+                currentByte = (currentByte << 2) | (val & 3);
+                bitCount += 2;
+                if (bitCount === 8) { buffer.push(currentByte); currentByte = 0; bitCount = 0; }
+            }
+            if (bitCount > 0) { currentByte = currentByte << (8 - bitCount); buffer.push(currentByte); }
+            let binary = String.fromCharCode.apply(null, buffer);
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function unpackBits(base64Str, totalLength = 993) {
+            let base64 = base64Str.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) base64 += '=';
+            let binary = atob(base64);
+            let result = "";
+            for (let i = 0; i < binary.length; i++) {
+                let byte = binary.charCodeAt(i);
+                for (let j = 3; j >= 0; j--) { result += ((byte >> (j * 2)) & 3).toString(); }
+            }
+            return result.substring(0, totalLength);
+        }
 
         function inicializarStickers() {
             if (container.children.length === 0) {
@@ -442,7 +442,7 @@
                         sticker.className = 'sticker';
                         sticker.id = `st-${item.prefix}-${i}`;
                         sticker.innerText = `${item.prefix}${i}`;
-                        sticker.setAttribute('data-state', '0'); 
+                        sticker.setAttribute('data-state', '0');
                         
                         sticker.addEventListener('click', function() {
                             let currentState = parseInt(sticker.getAttribute('data-state')) || 0;
@@ -456,6 +456,7 @@
                 });
             }
             mostrarMetadatosPantalla();
+            procesarEnlaceEntrante();
         }
 
         function setStickerState(element, state) {
@@ -481,296 +482,186 @@
             const usuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content');
             const fecha = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content');
             if(fecha) {
-                const fechaFormat = new Date(parseInt(fecha)).toLocaleString();
-                document.getElementById('user-tag').innerText = `Usuario: ${usuario} | Último guardado: ${fechaFormat}`;
+                document.getElementById('user-tag').innerText = `Usuario: ${usuario} | Guardado: ${new Date(parseInt(fecha)).toLocaleDateString()}`;
             } else {
                 document.getElementById('user-tag').innerText = `Usuario: ${usuario}`;
             }
         }
 
-        // Optimización: Compresión en bloques de 10 posiciones (Base 36) para un QR mucho menos denso.
-        function comprimirEstados(cadenaEstados) {
-            let resultadoCompreso = "";
-            const tamañoBloque = 10;
-            for (let i = 0; i < cadenaEstados.length; i += tamañoBloque) {
-                let bloque = cadenaEstados.substring(i, i + tamañoBloque);
-                let valorDecimal = parseInt(bloque, 3);
-                resultadoCompreso += valorDecimal.toString(36) + ".";
+        function construirURLCompartir() {
+            const alias = encodeURIComponent(nombreUsuarioGlobal);
+            return `${window.location.origin}${window.location.pathname}?u=${alias}&h=${hashCompresoCompartir}`;
+        }
+
+        function copiarEnlaceAlPortapapeles() {
+            const url = construirURLCompartir();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => alert("¡Enlace corto copiado!"))
+                .catch(() => alert(`Copia este enlace:\n\n${url}`));
+            } else { alert(`Copia este enlace:\n\n${url}`); }
+        }
+
+        function compartirEnlaceNativo() {
+            const url = construirURLCompartir();
+            if (navigator.share) { navigator.share({ title: 'Mi Álbum 2026', url: url }).catch(()=>{}); } 
+            else { copiarEnlaceAlPortapapeles(); }
+        }
+
+        function procesarEnlaceEntrante() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const h = urlParams.get('h');
+            const u = urlParams.get('u') || "Amigo";
+            
+            if (h) {
+                try {
+                    const totalStickersCount = document.querySelectorAll('.sticker').length || 993;
+                    const estadosDecodificados = unpackBits(h, totalStickersCount);
+
+                    if (confirm(`¡Progreso de "${u}" detectado por enlace!\n\n¿Deseas CARGAR sus datos en el álbum?`)) {
+                        esModoComparacionGlobal = false;
+                        ejecutarCargaDeDatosDirecta(u, estadosDecodificados, true);
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                } catch(e) { console.error("Error link", e); }
             }
-            return resultadoCompreso.slice(0, -1);
         }
 
-        function Blackbox_Descomprimir(stringCompreso) {
-            let partes = stringCompreso.split('.');
-            let cadenaOriginal = "";
-            const tamañoBloque = 10;
-            partes.forEach(p => {
-                let valorDecimal = parseInt(p, 36);
-                let ternario = valorDecimal.toString(3);
-                while (ternario.length < tamañoBloque) ternario = "0" + ternario;
-                cadenaOriginal += ternario;
-            });
-            return cadenaOriginal;
+        function compararPorEnlace() {
+            const urlAmigo = prompt("Pega el enlace corto que recibiste de tu amigo:");
+            if (!urlAmigo) return;
+            try {
+                const urlObj = new URL(urlAmigo);
+                const h = urlObj.searchParams.get("h");
+                const u = urlObj.searchParams.get("u") || "Amigo";
+                
+                if(!h) throw new Error();
+                const totalStickersCount = document.querySelectorAll('.sticker').length || 993;
+                const estadosDecodificados = unpackBits(h, totalStickersCount);
+                
+                esModoComparacionGlobal = true;
+                cerrarCamara();
+                ejecutarCargaDeDatosDirecta(u, estadosDecodificados, false);
+            } catch (e) { alert("Enlace inválido."); }
         }
 
+        // SOLUCIÓN RADICAL: El QR ahora solo procesa y aloja el hash binario corto puro.
         function procesarYMostrarQR() {
             let nombreUsuario = prompt("Introduce tu nombre:", "");
-            if (nombreUsuario === null) return; 
+            if (nombreUsuario === null) return;
             nombreUsuario = nombreUsuario.trim() || "Invitado";
-            
-            nombreUsuarioDescarga = nombreUsuario.toLowerCase().replace(/[^a-z0-9]/g, "-") || "invitado";
+            nombreUsuarioGlobal = nombreUsuario;
 
-            const timestampReducido = Date.now();
-            const fechaFormateada = new Date(timestampReducido).toLocaleString();
+            let estados = "";
+            document.querySelectorAll('.sticker').forEach(st => {
+                estados += (st.getAttribute('data-state') || '0');
+            });
+            
+            // Generamos el hash puro
+            hashCompresoCompartir = packBits(estados);
 
             document.querySelector('meta[name="checklist-user"]').setAttribute('content', nombreUsuario);
-            document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', timestampReducido);
-
-            let cadenaEstadosPuros = "";
-            document.querySelectorAll('.sticker').forEach(st => {
-                cadenaEstadosPuros += (st.getAttribute('data-state') || '0');
-            });
-
-            const mapaCompactado = comprimirEstados(cadenaEstadosPuros);
-            ultimoTextoQRGenerado = `${nombreUsuario}|${timestampReducido}|${mapaCompactado}`;
-
-            document.getElementById('qr-meta-details').innerText = `Usuario: ${nombreUsuario}\nFecha: ${fechaFormateada}`;
+            document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', Date.now().toString());
+            document.getElementById('qr-meta-details').innerText = `Usuario: ${nombreUsuario}\nCódigo QR optimizado (Baja Densidad).`;
 
             const displayZone = document.getElementById('qr-display');
             displayZone.innerHTML = "";
             
-            // Optimización clave: Cambiado CorrectLevel a M para disminuir la cantidad de puntos y facilitar la lectura en cámaras móviles.
+            // QR súper limpio de poquísimos puntos (Solo procesa el hash)
             new QRCode(displayZone, {
-                text: ultimoTextoQRGenerado,
-                width: 300,
-                height: 300,
-                correctLevel: QRCode.CorrectLevel.M
+                text: hashCompresoCompartir,
+                width: 180,
+                height: 180,
+                correctLevel: QRCode.CorrectLevel.L
             });
 
             setTimeout(() => {
                 const canvas = displayZone.querySelector('canvas');
                 if (canvas) {
                     const dataUrlPure = canvas.toDataURL("image/png");
-                    const nombreFinalArchivo = `${nombreUsuarioDescarga}_checklist.png`;
-                    
-                    displayZone.innerHTML = `
-                        <img src="${dataUrlPure}" 
-                             alt="Código QR de tu progreso" 
-                             style="display:block; width:240px; height:240px;"/>
-                    `;
-
-                    const btnDescarga = document.getElementById('btn-descarga-directa');
-                    btnDescarga.onclick = () => {
+                    displayZone.innerHTML = `<img src="${dataUrlPure}" alt="QR"/>`;
+                    document.getElementById('btn-descarga-directa').onclick = () => {
                         const link = document.createElement('a');
-                        link.download = nombreFinalArchivo;
+                        link.download = `${nombreUsuario.toLowerCase().replace(/[^a-z0-9]/g, "-")}_qr.png`;
                         link.href = dataUrlPure;
                         link.click();
                     };
                 }
-            }, 300);
+            }, 250);
 
             document.getElementById('qr-view-modal').style.display = 'flex';
         }
 
-        async function compartirQR() {
-            const imgElement = document.getElementById('qr-display').querySelector('img');
-            if (!imgElement) return;
-
-            try {
-                const response = await fetch(imgElement.src);
-                const blob = await response.blob();
-                const file = new File([blob], `${nombreUsuarioDescarga}_checklist.png`, { type: 'image/png' });
-
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Mi Álbum Mundial 2026',
-                        text: `¡Mira el progreso de mi álbum!`
-                    });
-                } else if (navigator.share) {
-                    await navigator.share({
-                        title: 'Mi Progreso Álbum',
-                        text: ultimoTextoQRGenerado
-                    });
-                } else {
-                    throw new Error("No compatible");
-                }
-            } catch (err) {
-                navigator.clipboard.writeText(ultimoTextoQRGenerado);
-                alert("Hemos copiado los datos en texto de tu QR al portapapeles.");
-            }
-        }
-
-        function cerrarModalQR() { 
-            document.getElementById('qr-view-modal').style.display = 'none'; 
-            mostrarMetadatosPantalla();
-        }
-
         function abrirCamara(esComparacion) {
             esModoComparacionGlobal = esComparacion;
-            isProcessingScan = false; 
+            isProcessingScan = false;
             const tituloModal = document.getElementById('camera-modal-title');
-            tituloModal.innerText = esComparacion ? "Comparar Álbum (Escanear o Subir)" : "Escanear Mi Código QR";
+            const botonEnlaceInterno = document.getElementById('btn-inside-compare-link');
+            
+            if(esComparacion) {
+                tituloModal.innerText = "Comparar QR / Enlace";
+                botonEnlaceInterno.style.display = "block";
+            } else {
+                tituloModal.innerText = "Escanear Mi Código QR";
+                botonEnlaceInterno.style.display = "none";
+            }
             
             document.getElementById('camera-modal').style.display = 'flex';
-            
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-                fps: 10, 
-                qrbox: { width: 220, height: 220 } 
-            }, false);
-            
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 220, height: 220 } }, false);
+            html5QrcodeScanner.render(onScanSuccess, () => {});
         }
 
         function cerrarCamara() {
             if(html5QrcodeScanner) {
-                html5QrcodeScanner.clear().then(() => {
-                    document.getElementById('camera-modal').style.display = 'none';
-                }).catch(() => {
-                    document.getElementById('camera-modal').style.display = 'none';
-                });
-            } else {
-                document.getElementById('camera-modal').style.display = 'none';
-            }
-        }
-
-        function procesarQRDesdeArchivo(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const html5QrCode = new Html5Qrcode("reader");
-            
-            if(html5QrcodeScanner) {
-                html5QrcodeScanner.clear().then(() => {
-                    escanearArchivoEstatico(html5QrCode, file);
-                }).catch(() => {
-                    escanearArchivoEstatico(html5QrCode, file);
-                });
-            } else {
-                escanearArchivoEstatico(html5QrCode, file);
-            }
-        }
-
-        function escanearArchivoEstatico(lector, archivo) {
-            isProcessingScan = false;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const image = new Image();
-                image.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                    
-                    canvas.width = 600;
-                    canvas.height = 600;
-                    
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-                    
-                    canvas.toBlob((blob) => {
-                        const archivoOptimizado = new File([blob], "qr_procesado.png", { type: "image/png" });
-                        
-                        lector.scanFile(archivoOptimizado, true)
-                            .then(decodedText => {
-                                document.getElementById('qr-file-input').value = ""; 
-                                document.getElementById('camera-modal').style.display = 'none'; 
-                                onScanSuccess(decodedText); 
-                            })
-                            .catch(err => {
-                                alert("No se detectó un QR válido. Recuerda descargar el QR con el nuevo botón 'Descargar Código QR' para que no pierda resolución.");
-                                document.getElementById('qr-file-input').value = "";
-                            });
-                    }, "image/png");
-                };
-                image.src = e.target.result;
-            };
-            reader.readAsDataURL(archivo);
+                html5QrcodeScanner.clear().then(() => { document.getElementById('camera-modal').style.display = 'none'; })
+                .catch(() => { document.getElementById('camera-modal').style.display = 'none'; });
+            } else { document.getElementById('camera-modal').style.display = 'none'; }
         }
 
         function onScanSuccess(decodedText) {
             if (isProcessingScan) return;
             isProcessingScan = true;
-
             if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().then(() => {
-                    ejecutarCargaDeDatos(decodedText);
-                }).catch(() => {
-                    ejecutarCargaDeDatos(decodedText);
-                });
-            } else {
-                ejecutarCargaDeDatos(decodedText);
+                html5QrcodeScanner.clear().then(() => conversionEstructuraQR(decodedText)).catch(() => conversionEstructuraQR(decodedText));
+            } else { conversionEstructuraQR(decodedText); }
+        }
+
+        function conversionEstructuraQR(text) {
+            try {
+                const totalStickersCount = document.querySelectorAll('.sticker').length || 993;
+                // Si viene del QR nuevo, el texto entero es directamente el hash puro.
+                let hashPuro = text.trim();
+                let usuarioDetectado = esModoComparacionGlobal ? "Amigo escaneado" : "Mis Datos QR";
+                
+                const estadosUnpacked = unpackBits(hashPuro, totalStickersCount);
+                ejecutarCargaDeDatosDirecta(usuarioDetectado, estadosUnpacked, !esModoComparacionGlobal);
+            } catch(e) {
+                alert("Error al procesar los datos de este QR.");
             }
         }
 
-        function ejecutarCargaDeDatos(decodedText) {
+        function ejecutarCargaDeDatosDirecta(user, estados, esCargaSimple) {
             document.getElementById('camera-modal').style.display = 'none';
-            
-            const partes = decodedText.split('|');
-            if(partes.length !== 3) {
-                alert("QR corrupto o no compatible.");
-                return;
-            }
-
-            let qrUsuario = partes[0].trim();
-            const qrTimestamp = partes[1];
-            const cadenaEstados = Blackbox_Descomprimir(partes[2]);
             const misStickers = document.querySelectorAll('.sticker');
 
-            if (!esModoComparacionGlobal) {
-                document.querySelector('meta[name="checklist-user"]').setAttribute('content', qrUsuario);
-                document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', qrTimestamp);
-
-                misStickers.forEach((miSticker, indice) => {
-                    if(indice < cadenaEstados.length) {
-                        setStickerState(miSticker, parseInt(cadenaEstados.charAt(indice)));
-                    }
+            if (esCargaSimple) {
+                document.querySelector('meta[name="checklist-user"]').setAttribute('content', user);
+                document.querySelector('meta[name="checklist-timestamp"]').setAttribute('content', Date.now().toString());
+                misStickers.forEach((st, idx) => {
+                    if(idx < estados.length) setStickerState(st, parseInt(estados.charAt(idx)) || 0);
                 });
                 mostrarMetadatosPantalla();
-                
-                setTimeout(() => {
-                    alert(`¡Progreso de ${qrUsuario} cargado correctamente!`);
-                }, 100);
+                alert(`¡Tus datos han sido restaurados con éxito!`);
             } else {
-                let miUsuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Invitado";
-                const miTimestamp = document.querySelector('meta[name="checklist-timestamp"]').getAttribute('content') || "";
-                
-                let lineaMiUsuario = "";
-                if (miUsuario === "Invitado") {
-                    const ahora = new Date().toLocaleString();
-                    lineaMiUsuario = `• <strong>Tú:</strong> ${ahora} <span style="color:#e74c3c; font-size:0.85rem; font-weight:normal;">( datos no guardados, recuerda guardar tu progreso antes de salir )</span>`;
-                } else {
-                    const miFechaFormat = miTimestamp ? new Date(parseInt(miTimestamp)).toLocaleString() : new Date().toLocaleString();
-                    lineaMiUsuario = `• <strong>${miUsuario}:</strong> Guardado el ${miFechaFormat}`;
-                }
-
-                let lineaAmigo = "";
-                const amigoFechaFormat = new Date(parseInt(qrTimestamp)).toLocaleString();
-                if (qrUsuario === "Invitado") {
-                    lineaAmigo = `• <strong>Tú (Amigo):</strong> Guardado el ${amigoFechaFormat}`;
-                } else {
-                    lineaAmigo = `• <strong>${qrUsuario}:</strong> Guardado el ${amigoFechaFormat}`;
-                }
-
-                let teDa = [];
-                let leDas = [];
-
-                misStickers.forEach((miSticker, indice) => {
-                    if(indice < cadenaEstados.length) {
-                        const miEstado = parseInt(miSticker.getAttribute('data-state')) || 0;
-                        const amigoEstado = parseInt(cadenaEstados.charAt(indice));
-                        const codigoFigurita = miSticker.innerText;
-
-                        if (amigoEstado === 2 && miEstado === 0) teDa.push(codigoFigurita);
-                        if (miEstado === 2 && amigoEstado === 0) leDas.push(codigoFigurita);
+                let teDa = []; let leDas = [];
+                misStickers.forEach((st, idx) => {
+                    if(idx < estados.length) {
+                        const miEst = parseInt(st.getAttribute('data-state')) || 0;
+                        const amigoEst = parseInt(estados.charAt(idx)) || 0;
+                        if (amigoEst === 2 && miEst === 0) teDa.push(st.innerText);
+                        if (miEst === 2 && amigoEst === 0) leDas.push(st.innerText);
                     }
                 });
-
-                document.getElementById('compare-info').innerHTML = `
-                    ${lineaMiUsuario}<br>
-                    ${lineaAmigo}
-                `;
-                
+                document.getElementById('compare-info').innerHTML = `• Comparando con: <strong>${user}</strong>`;
                 document.getElementById('te-da').innerText = teDa.length > 0 ? teDa.join(', ') : 'Ninguna.';
                 document.getElementById('le-das').innerText = leDas.length > 0 ? leDas.join(', ') : 'Ninguna.';
                 document.getElementById('compare-box').style.display = 'block';
@@ -778,9 +669,64 @@
             }
         }
 
-        function onScanFailure() {}
-        function cerrarComparacion() { document.getElementById('compare-box').style.display = 'none'; }
-        function exportarPDF() { window.print(); }
+        async function compartirQR() {
+            const img = document.getElementById('qr-display').querySelector('img');
+            if (!img) return;
+            try {
+                const res = await fetch(img.src);
+                const blob = await res.blob();
+                const file = new File([blob], 'album_qr.png', { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: 'Mi QR Álbum 2026' });
+                } else { alert("Tu dispositivo no soporta compartir imágenes nativamente."); }
+            } catch (e) { alert("Error al intentar compartir."); }
+        }
+
+        function procesarQRDesdeArchivo(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const lector = new Html5Qrcode("reader");
+            lector.scanFile(file, true).then(txt => {
+                document.getElementById('camera-modal').style.display = 'none';
+                conversionEstructuraQR(txt);
+            }).catch(() => alert("No se pudo leer el QR. Asegúrate de que sea nítido."));
+        }
+
+        function exportarAPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let miUsuario = document.querySelector('meta[name="checklist-user"]').getAttribute('content') || "Invitado";
+            doc.setFont("Helvetica", "bold"); doc.setFontSize(16);
+            doc.text(`ÁLBUM MUNDIAL 2026 - REPORTE DE REPETIDAS Y FALTANTES`, 14, 20);
+            doc.setFontSize(10); doc.setFont("Helvetica", "normal");
+            doc.text(`Usuario: ${miUsuario}  |  Generado: ${new Date().toLocaleString()}`, 14, 26);
+            doc.line(14, 29, 196, 29);
+
+            let faltan = []; let rep = [];
+            albumData.forEach(item => {
+                for (let i = 1; i <= item.count; i++) {
+                    const st = document.getElementById(`st-${item.prefix}-${i}`);
+                    if (st) {
+                        if (st.getAttribute('data-state') === "0") faltan.push(`${item.prefix}${i}`);
+                        if (st.getAttribute('data-state') === "2") rep.push(`${item.prefix}${i}`);
+                    }
+                }
+            });
+
+            doc.setFont("Helvetica", "bold"); doc.text("MIS REPETIDAS:", 14, 38);
+            doc.setFont("Helvetica", "normal");
+            let lineasRep = doc.splitTextToSize(rep.length > 0 ? rep.join(", ") : "Ninguna.", 180);
+            doc.text(lineasRep, 14, 44);
+
+            let yF = 52 + (lineasRep.length * 5);
+            doc.setFont("Helvetica", "bold"); doc.text("ME FALTAN:", 14, yF);
+            doc.setFont("Helvetica", "normal");
+            let lineasFal = doc.splitTextToSize(faltan.length > 0 ? faltan.join(", ") : "¡Álbum lleno!", 180);
+            doc.text(lineasFal, 14, yF + 6);
+
+            doc.save(`${miUsuario.toLowerCase()}_album2026.pdf`);
+        }
+
+        function cerrarModalQR() { document.getElementById('qr-view-modal').style.display = 'none'; mostrarMetadatosPantalla(); }
 
         document.addEventListener('DOMContentLoaded', () => {
             inicializarStickers();
