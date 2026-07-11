@@ -488,23 +488,26 @@
             }
         }
 
+        // Optimización: Compresión en bloques de 10 posiciones (Base 36) para un QR mucho menos denso.
         function comprimirEstados(cadenaEstados) {
             let resultadoCompreso = "";
-            for (let i = 0; i < cadenaEstados.length; i += 5) {
-                let bloque = cadenaEstados.substring(i, i + 5);
+            const tamañoBloque = 10;
+            for (let i = 0; i < cadenaEstados.length; i += tamañoBloque) {
+                let bloque = cadenaEstados.substring(i, i + tamañoBloque);
                 let valorDecimal = parseInt(bloque, 3);
                 resultadoCompreso += valorDecimal.toString(36) + ".";
             }
             return resultadoCompreso.slice(0, -1);
         }
 
-        function descomprimirEstados(stringCompreso) {
+        function Blackbox_Descomprimir(stringCompreso) {
             let partes = stringCompreso.split('.');
             let cadenaOriginal = "";
+            const tamañoBloque = 10;
             partes.forEach(p => {
                 let valorDecimal = parseInt(p, 36);
                 let ternario = valorDecimal.toString(3);
-                while (ternario.length < 5) ternario = "0" + ternario;
+                while (ternario.length < tamañoBloque) ternario = "0" + ternario;
                 cadenaOriginal += ternario;
             });
             return cadenaOriginal;
@@ -536,11 +539,12 @@
             const displayZone = document.getElementById('qr-display');
             displayZone.innerHTML = "";
             
+            // Optimización clave: Cambiado CorrectLevel a M para disminuir la cantidad de puntos y facilitar la lectura en cámaras móviles.
             new QRCode(displayZone, {
                 text: ultimoTextoQRGenerado,
                 width: 300,
                 height: 300,
-                correctLevel: QRCode.CorrectLevel.H
+                correctLevel: QRCode.CorrectLevel.M
             });
 
             setTimeout(() => {
@@ -592,7 +596,7 @@
                     throw new Error("No compatible");
                 }
             } catch (err) {
-                navigator.clipboard.writeText(ultimoTextoQRGenerated);
+                navigator.clipboard.writeText(ultimoTextoQRGenerado);
                 alert("Hemos copiado los datos en texto de tu QR al portapapeles.");
             }
         }
@@ -710,7 +714,7 @@
 
             let qrUsuario = partes[0].trim();
             const qrTimestamp = partes[1];
-            const cadenaEstados = descomprimirEstados(partes[2]);
+            const cadenaEstados = Blackbox_Descomprimir(partes[2]);
             const misStickers = document.querySelectorAll('.sticker');
 
             if (!esModoComparacionGlobal) {
