@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galería de Movimientos y Acciones</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-color: #2c3e50;
+      --primary-color: #3498db;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: #7f8c8d;
+      font-size: 1.1rem;
+    }
+
+    /* Secciones por función */
+    .section-category {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .category-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      border-bottom: 2px solid var(--bg-color);
+      padding-bottom: 0.75rem;
+      margin-top: 0;
+    }
+
+    /* Rejilla de imágenes */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .card {
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fafafa;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card-info {
+      padding: 0.8rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Galería Clasificada por Acción</h1>
+    <p class="subtitle">Imágenes integradas directamente mediante código Base64</p>
+  </header>
+
+  <main>
+    <!-- CATEGORÍA: CAMINANDO -->
+    <section class="section-category">
+      <h2 class="category-title">🚶 Categoría: Caminando</h2>
+      <div class="grid">
+        
+        <div class="card">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBzdHlsZT0iYmFja2dyb3VuZDojMmI1ODBjOyI+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Q2FtaW5hbmRvIC0gUGFzbyAxPC90ZXh0Pjwvc3ZnPg==" alt="Caminando paso 1">
+          <div class="card-info">Caminando (Postura 1)</div>
+        </div>
+
+        <div class="card">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBzdHlsZT0iYmFja2dyb3VuZDojM2E3NWMxOyI+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Q2FtaW5hbmRvIC0gUGFzbyAyPC90ZXh0Pjwvc3ZnPg==" alt="Caminando paso 2">
+          <div class="card-info">Caminando (Postura 2)</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CATEGORÍA: SALTANDO -->
+    <section class="section-category">
+      <h2 class="category-title">🦘 Categoría: Saltando</h2>
+      <div class="grid">
+
+        <div class="card">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBzdHlsZT0iYmFja2dyb3VuZDojNjM5YTY3OyI+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+U2FsdGFuZG8gLSBJbnRlc288L3RleHQ+PC9zdmc+" alt="Saltando inicio">
+          <div class="card-info">Saltando (Elevación)</div>
+        </div>
+
+        <div class="card">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBzdHlsZT0iYmFja2dyb3VuZDojMThmMTI1OyI+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+U2FsdGFuZG8gLSBBaXJlPC90ZXh0Pjwvc3ZnPg==" alt="Saltando en el aire">
+          <div class="card-info">Saltando (Punto Máximo)</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CATEGORÍA: QUITANDO / RETIRANDO -->
+    <section class="section-category">
+      <h2 class="category-title">✋ Categoría: Quitando / Retirando</h2>
+      <div class="grid">
+
+        <div class="card">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBzdHlsZT0iYmFja2dyb3VuZDojZDgzYTU2OyI+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+UXVpdGFuZG8gLSBBY2Npb24gMTwvdGV4dD48L3N2Zz4=" alt="Quitando objeto">
+          <div class="card-info">Quitando (Inicio)</div>
+        </div>
+
+        <div class="card">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBzdHlsZT0iYmFja2dyb3VuZDojZDE1MjhjOyI+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+UXVpdGFuZG8gLSBBY2Npb24gMjwvdGV4dD48L3N2Zz4=" alt="Retirando final">
+          <div class="card-info">Quitando (Retirado completo)</div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>
