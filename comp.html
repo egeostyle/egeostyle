@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Excel Comparator</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SheetJS / xlsx CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    // ─────────────────────────────────────────────
+    //  Tailwind config: paleta personalizada
+    // ─────────────────────────────────────────────
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#f0f4ff',
+              100: '#dbe4ff',
+              200: '#b3c6ff',
+              400: '#6690f7',
+              600: '#3a5cf5',
+              700: '#2a46d0',
+              900: '#1a2a7a',
+            },
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Variables base ─── */
+    :root {
+      --clr-match:    #d1fae5; /* verde suave  */
+      --clr-diff:     #fef3c7; /* amarillo      */
+      --clr-only1:    #fee2e2; /* rojo claro    */
+      --clr-only2:    #e0e7ff; /* índigo claro  */
+      --clr-resolved: #f0fdf4; /* verde muy claro */
+    }
+
+    /* ─── Zona drag & drop ─── */
+    .drop-zone {
+      transition: border-color .2s, background-color .2s, transform .15s;
+    }
+    .drop-zone.dragover {
+      border-color: #3a5cf5;
+      background-color: #f0f4ff;
+      transform: scale(1.02);
+    }
+    .drop-zone.loaded {
+      border-color: #10b981;
+      background-color: #d1fae5;
+    }
+
+    /* ─── Scrollbar tabla ─── */
+    .table-scroll::-webkit-scrollbar { height: 6px; }
+    .table-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+    /* ─── Celdas con discrepancia ─── */
+    .cell-diff { background: #fde68a; border-radius: 4px; padding: 2px 6px; font-weight: 600; }
+    .cell-val  { display: inline-block; max-width: 180px; overflow: hidden;
+                 text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+
+    /* ─── Spinner ─── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin .7s linear infinite; }
+
+    /* ─── Tooltip hover ─── */
+    [data-tip] { position: relative; cursor: default; }
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b; color: #fff;
+      font-size: 11px; padding: 4px 8px; border-radius: 6px;
+      white-space: nowrap; pointer-events: none; z-index: 50;
+    }
+
+    /* ─── Fila colores ─── */
+    tr.row-match { background-color: var(--clr-match); }
+    tr.row-diff  { background-color: var(--clr-diff); }
+    tr.row-only1 { background-color: var(--clr-only1); }
+    tr.row-only2 { background-color: var(--clr-only2); }
+    tr.row-resolved { background-color: var(--clr-resolved); }
+
+    /* ─── Panel de resolución ─── */
+    .res-panel { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .res-btn {
+      font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1.5px solid transparent;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .res-btn:hover { opacity: .85; }
+    .res-btn.active { font-weight: 700; }
+    .res-btn-1 { border-color: #3b82f6; color: #1d4ed8; }
+    .res-btn-1.active { background: #3b82f6; color: #fff; }
+    .res-btn-2 { border-color: #8b5cf6; color: #6d28d9; }
+    .res-btn-2.active { background: #8b5cf6; color: #fff; }
+    .res-input {
+      font-size: 11px; border: 1.5px solid #d1d5db; border-radius: 6px;
+      padding: 2px 6px; width: 110px; outline: none;
+      transition: border-color .15s;
+    }
+    .res-input:focus { border-color: #3a5cf5; }
+
+    /* ─── Badge leyenda ─── */
+    .badge { display: inline-flex; align-items: center; gap: 6px;
+             font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
+
+<!-- ════════════════════════════════════════════
+     ENCABEZADO
+════════════════════════════════════════════ -->
+<header class="bg-brand-700 text-white shadow-lg">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
+    <!-- Icono SVG inline -->
+    <svg class="w-8 h-8 text-brand-200 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="3" y="3" width="7" height="18" rx="1.5"/>
+      <rect x="14" y="3" width="7" height="18" rx="1.5"/>
+      <path d="M10 8h4M10 12h4M10 16h4" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1 class="text-xl font-bold tracking-tight leading-none">Excel Comparator</h1>
+      <p class="text-brand-200 text-xs mt-0.5">Compara, detecta diferencias y exporta el resultado consolidado</p>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════
+     SECCIÓN DE CARGA
+════════════════════════════════════════════ -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+  <section class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+    <!-- ── Archivo 1 ── -->
+    <div>
+      <label class="block text-sm font-semibold text-slate-600 mb-2">
+        <span class="inline-block w-5 h-5 rounded-full bg-blue-500 text-white text-xs text-center leading-5 mr-1">1</span>
+        Archivo 1
+      </label>
+      <div id="drop1"
+           class="drop-zone border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer select-none bg-white"
+           ondragover="handleDragOver(event,'drop1')"
+           ondragleave="handleDragLeave('drop1')"
+           ondrop="handleDrop(event,1)"
+           onclick="document.getElementById('file1Input').click()">
+        <div id="drop1-icon" class="flex flex-col items-center gap-2 pointer-events-none">
+          <svg class="w-10 h-10 text-slate-300" fill="none" viewBox="0 0 48 48" stroke="currentColor" stroke-width="1.5">
+            <path d="M28 4H12a4 4 0 00-4 4v32a4 4 0 004 4h24a4 4 0 004-4V20L28 4z"/>
+            <path d="M28 4v16h16"/>
+            <path d="M20 30l4-4 4 4M24 26v10" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="text-sm text-slate-400">Arrastra aquí o <span class="text-brand-600 font-semibold">selecciona</span></p>
+          <p class="text-xs text-slate-300">.xlsx · .xls · .csv</p>
+        </div>
+        <div id="drop1-info" class="hidden items-center justify-center gap-2 pointer-events-none">
+          <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span id="drop1-name" class="text-sm font-medium text-emerald-700 truncate max-w-xs"></span>
+        </div>
+      </div>
+      <input id="file1Input" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="loadFile(event,1)" />
+    </div>
+
+    <!-- ── Archivo 2 ── -->
+    <div>
+      <label class="block text-sm font-semibold text-slate-600 mb-2">
+        <span class="inline-block w-5 h-5 rounded-full bg-violet-500 text-white text-xs text-center leading-5 mr-1">2</span>
+        Archivo 2
+      </label>
+      <div id="drop2"
+           class="drop-zone border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer select-none bg-white"
+           ondragover="handleDragOver(event,'drop2')"
+           ondragleave="handleDragLeave('drop2')"
+           ondrop="handleDrop(event,2)"
+           onclick="document.getElementById('file2Input').click()">
+        <div id="drop2-icon" class="flex flex-col items-center gap-2 pointer-events-none">
+          <svg class="w-10 h-10 text-slate-300" fill="none" viewBox="0 0 48 48" stroke="currentColor" stroke-width="1.5">
+            <path d="M28 4H12a4 4 0 00-4 4v32a4 4 0 004 4h24a4 4 0 004-4V20L28 4z"/>
+            <path d="M28 4v16h16"/>
+            <path d="M20 30l4-4 4 4M24 26v10" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="text-sm text-slate-400">Arrastra aquí o <span class="text-brand-600 font-semibold">selecciona</span></p>
+          <p class="text-xs text-slate-300">.xlsx · .xls · .csv</p>
+        </div>
+        <div id="drop2-info" class="hidden items-center justify-center gap-2 pointer-events-none">
+          <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span id="drop2-name" class="text-sm font-medium text-emerald-700 truncate max-w-xs"></span>
+        </div>
+      </div>
+      <input id="file2Input" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="loadFile(event,2)" />
+    </div>
+
+  </section>
+
+  <!-- ── Opciones y botón comparar ── -->
+  <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+
+    <div class="flex-1 space-y-1">
+      <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Hoja a comparar</label>
+      <div class="flex gap-3">
+        <select id="sheet1Sel" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white w-full focus:outline-none focus:border-brand-400 disabled:opacity-40" disabled>
+          <option value="">— Cargando —</option>
+        </select>
+        <select id="sheet2Sel" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white w-full focus:outline-none focus:border-brand-400 disabled:opacity-40" disabled>
+          <option value="">— Cargando —</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="btnCompare"
+            onclick="runComparison()"
+            disabled
+            class="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow transition disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+      </svg>
+      Comparar Archivos
+    </button>
+  </div>
+
+  <!-- ── Mensaje de estado ── -->
+  <div id="statusMsg" class="hidden text-sm text-slate-500 flex items-center gap-2">
+    <svg class="spinner w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+    </svg>
+    <span id="statusText">Procesando…</span>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       PANEL DE RESULTADOS
+  ════════════════════════════════════════════ -->
+  <section id="resultsPanel" class="hidden space-y-5">
+
+    <!-- Resumen estadístico -->
+    <div id="statsBar" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+
+    <!-- Leyenda visual -->
+    <div class="flex flex-wrap gap-2 text-slate-600">
+      <span class="badge" style="background:var(--clr-match)">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Coincidencia exacta
+      </span>
+      <span class="badge" style="background:var(--clr-diff)">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Discrepancia
+      </span>
+      <span class="badge" style="background:var(--clr-only1)">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span> Solo en Archivo 1
+      </span>
+      <span class="badge" style="background:var(--clr-only2)">
+        <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block"></span> Solo en Archivo 2
+      </span>
+      <span class="badge" style="background:var(--clr-resolved)">
+        <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> Resuelto
+      </span>
+    </div>
+
+    <!-- Barra de filtro -->
+    <div class="flex flex-wrap gap-2 items-center">
+      <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Filtrar:</span>
+      <button class="filter-btn active text-xs px-3 py-1 rounded-full border border-slate-300 bg-white hover:bg-slate-100 transition" data-filter="all" onclick="applyFilter('all',this)">Todos</button>
+      <button class="filter-btn text-xs px-3 py-1 rounded-full border border-slate-300 bg-white hover:bg-slate-100 transition" data-filter="diff" onclick="applyFilter('diff',this)">Con diferencias</button>
+      <button class="filter-btn text-xs px-3 py-1 rounded-full border border-slate-300 bg-white hover:bg-slate-100 transition" data-filter="only" onclick="applyFilter('only',this)">Exclusivos</button>
+      <button class="filter-btn text-xs px-3 py-1 rounded-full border border-slate-300 bg-white hover:bg-slate-100 transition" data-filter="match" onclick="applyFilter('match',this)">Coincidencias</button>
+
+      <!-- Buscar -->
+      <div class="ml-auto relative">
+        <input id="searchInput" type="text" placeholder="Buscar…" oninput="applySearch()" class="text-xs border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 bg-white focus:outline-none focus:border-brand-400 w-48"/>
+        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-scroll overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
+      <table class="min-w-full text-xs" id="compareTable">
+        <thead id="tableHead" class="bg-slate-100 text-slate-600 sticky top-0 z-10"></thead>
+        <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+
+    <!-- Botón exportar -->
+    <div class="flex justify-end gap-3">
+      <button onclick="exportResult()"
+              class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow transition">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+        Exportar Resultado (.xlsx)
+      </button>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ════════════════════════════════════════════
+     JAVASCRIPT PRINCIPAL
+════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────
+//  Estado global de la aplicación
+// ─────────────────────────────────────────────
+const state = {
+  wb1: null, wb2: null,          // workbooks XLSX
+  data1: [], data2: [],          // filas como objetos
+  headers1: [], headers2: [],    // cabeceras
+  keyCol: '',                    // columna clave detectada
+  rows: [],                      // filas unificadas para render
+  resolutions: {},               // { rowKey: { col: { choice, custom } } }
+  currentFilter: 'all',
+  currentSearch: '',
+};
+
+// Nombres candidatos para columna clave (prioridad descendente)
+const KEY_CANDIDATES = ['id','código','codigo','sku','clave','key','ref','referencia','num','número','numero'];
+
+// ─────────────────────────────────────────────
+//  DRAG & DROP
+// ─────────────────────────────────────────────
+function handleDragOver(e, id) {
+  e.preventDefault();
+  document.getElementById(id).classList.add('dragover');
+}
+function handleDragLeave(id) {
+  document.getElementById(id).classList.remove('dragover');
+}
+function handleDrop(e, num) {
+  e.preventDefault();
+  const id = 'drop' + num;
+  document.getElementById(id).classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file, num);
+}
+function loadFile(e, num) {
+  const file = e.target.files[0];
+  if (file) processFile(file, num);
+}
+
+// ─────────────────────────────────────────────
+//  PROCESAR ARCHIVO
+// ─────────────────────────────────────────────
+function processFile(file, num) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const wb = XLSX.read(data, { type: 'array', cellDates: true });
+
+    // Guardar workbook en estado
+    if (num === 1) state.wb1 = wb;
+    else            state.wb2 = wb;
+
+    // Poblar selector de hojas
+    const sel = document.getElementById('sheet' + num + 'Sel');
+    sel.innerHTML = '';
+    wb.SheetNames.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = name;
+      sel.appendChild(opt);
+    });
+    sel.disabled = false;
+
+    // Marcar zona como cargada
+    markLoaded(num, file.name);
+    updateCompareBtn();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function markLoaded(num, name) {
+  const zone  = document.getElementById('drop' + num);
+  const icon  = document.getElementById('drop' + num + '-icon');
+  const info  = document.getElementById('drop' + num + '-info');
+  const label = document.getElementById('drop' + num + '-name');
+  zone.classList.add('loaded');
+  icon.classList.add('hidden');
+  info.classList.remove('hidden');
+  info.classList.add('flex');
+  label.textContent = name;
+}
+
+function updateCompareBtn() {
+  document.getElementById('btnCompare').disabled = !(state.wb1 && state.wb2);
+}
+
+// ─────────────────────────────────────────────
+//  LEER HOJA COMO ARRAY DE OBJETOS
+// ─────────────────────────────────────────────
+function sheetToRows(wb, sheetName) {
+  const ws = wb.Sheets[sheetName];
+  const raw = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+  return raw;
+}
+
+function getHeaders(rows) {
+  if (!rows.length) return [];
+  return Object.keys(rows[0]);
+}
+
+// ─────────────────────────────────────────────
+//  DETECTAR COLUMNA CLAVE
+// ─────────────────────────────────────────────
+function detectKey(headers1, headers2) {
+  const common = headers1.filter(h => headers2.includes(h));
+  // Buscar por candidatos conocidos (case insensitive)
+  for (const cand of KEY_CANDIDATES) {
+    const found = common.find(h => h.toLowerCase().trim() === cand);
+    if (found) return found;
+  }
+  // Buscar si algún header contiene palabras clave
+  for (const cand of KEY_CANDIDATES) {
+    const found = common.find(h => h.toLowerCase().includes(cand));
+    if (found) return found;
+  }
+  // Fallback: primera columna común
+  return common[0] || headers1[0];
+}
+
+// ─────────────────────────────────────────────
+//  EJECUTAR COMPARACIÓN
+// ─────────────────────────────────────────────
+function runComparison() {
+  setStatus(true, 'Leyendo hojas…');
+
+  // setTimeout para permitir que el spinner se pinte
+  setTimeout(() => {
+    try {
+      const s1 = document.getElementById('sheet1Sel').value;
+      const s2 = document.getElementById('sheet2Sel').value;
+
+      state.data1    = sheetToRows(state.wb1, s1);
+      state.data2    = sheetToRows(state.wb2, s2);
+      state.headers1 = getHeaders(state.data1);
+      state.headers2 = getHeaders(state.data2);
+      state.resolutions = {};
+
+      // Todas las columnas (unión)
+      const allCols = [...new Set([...state.headers1, ...state.headers2])];
+
+      // Detectar clave
+      state.keyCol = detectKey(state.headers1, state.headers2);
+
+      // Indexar por clave
+      const map1 = new Map();
+      const map2 = new Map();
+      state.data1.forEach(r => map1.set(String(r[state.keyCol] ?? ''), r));
+      state.data2.forEach(r => map2.set(String(r[state.keyCol] ?? ''), r));
+
+      const allKeys = [...new Set([...map1.keys(), ...map2.keys()])];
+
+      // Construir filas unificadas
+      state.rows = allKeys.map(key => {
+        const r1 = map1.get(key) || null;
+        const r2 = map2.get(key) || null;
+        let type = 'match'; // match | diff | only1 | only2
+        if (!r1) type = 'only2';
+        else if (!r2) type = 'only1';
+        else {
+          // Comparar columna a columna
+          const hasDiff = allCols.some(col => {
+            const v1 = String(r1[col] ?? '').trim();
+            const v2 = String(r2[col] ?? '').trim();
+            return v1 !== v2;
+          });
+          type = hasDiff ? 'diff' : 'match';
+        }
+        return { key, r1, r2, type, allCols };
+      });
+
+      state.currentFilter = 'all';
+      state.currentSearch = '';
+      document.getElementById('searchInput').value = '';
+      resetFilterBtns();
+
+      renderStats();
+      renderTable();
+
+      document.getElementById('resultsPanel').classList.remove('hidden');
+      setStatus(false);
+
+      // Scroll suave a resultados
+      document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth' });
+
+    } catch(err) {
+      setStatus(false);
+      alert('Error al procesar los archivos: ' + err.message);
+      console.error(err);
+    }
+  }, 60);
+}
+
+// ─────────────────────────────────────────────
+//  ESTADÍSTICAS
+// ─────────────────────────────────────────────
+function renderStats() {
+  const counts = { match: 0, diff: 0, only1: 0, only2: 0 };
+  state.rows.forEach(r => counts[r.type]++);
+
+  const bar = document.getElementById('statsBar');
+  bar.innerHTML = [
+    { label: 'Coincidencias',  val: counts.match, color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+    { label: 'Discrepancias',  val: counts.diff,  color: 'bg-amber-50 border-amber-200 text-amber-700' },
+    { label: 'Solo Archivo 1', val: counts.only1, color: 'bg-red-50 border-red-200 text-red-700' },
+    { label: 'Solo Archivo 2', val: counts.only2, color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
+  ].map(s => `
+    <div class="border rounded-xl p-4 ${s.color}">
+      <div class="text-2xl font-bold">${s.val}</div>
+      <div class="text-xs font-medium mt-0.5 opacity-80">${s.label}</div>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────
+//  RENDERIZAR TABLA
+// ─────────────────────────────────────────────
+function renderTable() {
+  const allCols = state.rows[0]?.allCols || [];
+  const keyCol  = state.keyCol;
+
+  // ── Cabecera ──
+  const thead = document.getElementById('tableHead');
+  thead.innerHTML = `<tr>
+    <th class="px-3 py-2 text-left font-semibold w-6">#</th>
+    <th class="px-3 py-2 text-left font-semibold">Estado</th>
+    ${allCols.map(col => `
+      <th class="px-3 py-2 text-left font-semibold ${col === keyCol ? 'bg-brand-50 text-brand-700' : ''}">
+        ${esc(col)}${col === keyCol ? ' <span class="text-brand-400 text-xs">(clave)</span>' : ''}
+      </th>
+    `).join('')}
+    <th class="px-3 py-2 text-left font-semibold bg-slate-50 min-w-[220px]">Resolución</th>
+  </tr>`;
+
+  // ── Cuerpo ──
+  renderRows();
+}
+
+function renderRows() {
+  const allCols = state.rows[0]?.allCols || [];
+  const keyCol  = state.keyCol;
+  const tbody   = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  const filtered = getFilteredRows();
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="999" class="text-center py-10 text-slate-400">Sin resultados para este filtro</td></tr>`;
+    return;
+  }
+
+  filtered.forEach((row, idx) => {
+    const { key, r1, r2, type } = row;
+    const res = state.resolutions[key] || {};
+
+    // ¿Está completamente resuelto?
+    const needsResolution = type === 'diff';
+    const isResolved = needsResolution && allCols.every(col => {
+      const v1 = String(r1?.[col] ?? '').trim();
+      const v2 = String(r2?.[col] ?? '').trim();
+      if (v1 === v2) return true;
+      return res[col]?.choice;
+    });
+
+    // Clase de fila
+    const rowClass = isResolved ? 'row-resolved' : `row-${type}`;
+
+    // Etiqueta de estado
+    const statusLabel = {
+      match: `<span class="badge text-emerald-700" style="background:var(--clr-match)">✓ Coincide</span>`,
+      diff:  isResolved
+               ? `<span class="badge text-green-700" style="background:var(--clr-resolved)">✔ Resuelto</span>`
+               : `<span class="badge text-amber-700" style="background:var(--clr-diff)">⚠ Diferencias</span>`,
+      only1: `<span class="badge text-red-700" style="background:var(--clr-only1)">① Exclusivo</span>`,
+      only2: `<span class="badge text-indigo-700" style="background:var(--clr-only2)">② Exclusivo</span>`,
+    }[type] || '';
+
+    // Celdas de columnas
+    const cellsHTML = allCols.map(col => {
+      const v1 = String(r1?.[col] ?? '');
+      const v2 = String(r2?.[col] ?? '');
+      const differs = r1 && r2 && v1.trim() !== v2.trim();
+      const cellBg  = col === keyCol ? 'style="background:rgba(58,92,245,.06)"' : '';
+
+      if (type === 'only1') return `<td class="px-3 py-2 align-top" ${cellBg}><span class="cell-val" data-tip="${esc(v1)}">${esc(v1)}</span></td>`;
+      if (type === 'only2') return `<td class="px-3 py-2 align-top" ${cellBg}><span class="cell-val" data-tip="${esc(v2)}">${esc(v2)}</span></td>`;
+      if (type === 'match') return `<td class="px-3 py-2 align-top" ${cellBg}><span class="cell-val" data-tip="${esc(v1)}">${esc(v1)}</span></td>`;
+
+      // type === 'diff'
+      if (!differs) return `<td class="px-3 py-2 align-top" ${cellBg}><span class="cell-val" data-tip="${esc(v1)}">${esc(v1)}</span></td>`;
+
+      // Celda con diferencia: mostrar ambos valores
+      return `<td class="px-3 py-2 align-top" ${cellBg}>
+        <div class="space-y-1">
+          <div class="flex items-start gap-1">
+            <span class="text-blue-400 font-bold text-xs shrink-0">①</span>
+            <span class="cell-diff text-slate-700" data-tip="${esc(v1)}">${esc(v1) || '<em class="text-slate-300">vacío</em>'}</span>
+          </div>
+          <div class="flex items-start gap-1">
+            <span class="text-violet-400 font-bold text-xs shrink-0">②</span>
+            <span class="cell-diff" style="background:#ddd6fe;color:#4c1d95" data-tip="${esc(v2)}">${esc(v2) || '<em style="opacity:.4">vacío</em>'}</span>
+          </div>
+        </div>
+      </td>`;
+    }).join('');
+
+    // Panel de resolución
+    let resHTML = '<td class="px-3 py-2 align-top bg-slate-50">';
+    if (type === 'diff') {
+      // Columnas con diferencia
+      const diffCols = allCols.filter(col => {
+        const v1 = String(r1?.[col] ?? '').trim();
+        const v2 = String(r2?.[col] ?? '').trim();
+        return v1 !== v2;
+      });
+
+      if (diffCols.length === 0) {
+        resHTML += '<span class="text-slate-300 text-xs">—</span>';
+      } else {
+        resHTML += '<div class="space-y-2">';
+        diffCols.forEach(col => {
+          const colRes   = res[col] || {};
+          const choice   = colRes.choice || '';
+          const customVal = colRes.custom || '';
+          const safeKey  = key.replace(/"/g, '&quot;');
+          const safeCol  = col.replace(/"/g, '&quot;');
+          const v1 = String(r1?.[col] ?? '');
+          const v2 = String(r2?.[col] ?? '');
+
+          resHTML += `
+          <div>
+            <p class="text-slate-400 text-xs font-mono mb-1 truncate max-w-[200px]" title="${esc(col)}">${esc(col)}</p>
+            <div class="res-panel">
+              <button class="res-btn res-btn-1 ${choice==='f1'?'active':''}"
+                      onclick="resolve('${safeKey}','${safeCol}','f1',this)"
+                      title="Archivo 1: ${esc(v1)}">① Arch.1</button>
+              <button class="res-btn res-btn-2 ${choice==='f2'?'active':''}"
+                      onclick="resolve('${safeKey}','${safeCol}','f2',this)"
+                      title="Archivo 2: ${esc(v2)}">② Arch.2</button>
+              <input  class="res-input" type="text" placeholder="Personalizado"
+                      value="${esc(customVal)}"
+                      onchange="resolveCustom('${safeKey}','${safeCol}',this)"
+                      title="Valor personalizado"/>
+            </div>
+          </div>`;
+        });
+        resHTML += '</div>';
+      }
+    } else {
+      resHTML += '<span class="text-slate-300 text-xs">—</span>';
+    }
+    resHTML += '</td>';
+
+    const tr = document.createElement('tr');
+    tr.className = rowClass;
+    tr.dataset.type = type;
+    tr.dataset.key  = key;
+    tr.innerHTML = `
+      <td class="px-3 py-2 text-slate-400 font-mono">${idx + 1}</td>
+      <td class="px-3 py-2">${statusLabel}</td>
+      ${cellsHTML}
+      ${resHTML}
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  RESOLUCIÓN DE CONFLICTOS
+// ─────────────────────────────────────────────
+function resolve(key, col, choice, btn) {
+  if (!state.resolutions[key]) state.resolutions[key] = {};
+  const prev = state.resolutions[key][col] || {};
+
+  if (prev.choice === choice) {
+    // Desmarcar si ya estaba activo (toggle)
+    delete state.resolutions[key][col];
+  } else {
+    state.resolutions[key][col] = { choice, custom: '' };
+  }
+  renderRows();
+  applyVisibleFilter();
+}
+
+function resolveCustom(key, col, input) {
+  const val = input.value.trim();
+  if (!state.resolutions[key]) state.resolutions[key] = {};
+  if (val) {
+    state.resolutions[key][col] = { choice: 'custom', custom: val };
+  } else {
+    delete state.resolutions[key][col];
+  }
+  renderRows();
+  applyVisibleFilter();
+}
+
+// ─────────────────────────────────────────────
+//  FILTROS Y BÚSQUEDA
+// ─────────────────────────────────────────────
+function getFilteredRows() {
+  const filter = state.currentFilter;
+  const search = state.currentSearch.toLowerCase();
+
+  return state.rows.filter(row => {
+    const matchFilter = filter === 'all'
+      || (filter === 'diff'  && row.type === 'diff')
+      || (filter === 'only'  && (row.type === 'only1' || row.type === 'only2'))
+      || (filter === 'match' && row.type === 'match');
+
+    if (!matchFilter) return false;
+    if (!search) return true;
+
+    const haystack = JSON.stringify(row.r1 || '') + JSON.stringify(row.r2 || '');
+    return haystack.toLowerCase().includes(search);
+  });
+}
+
+function applyFilter(filter, btn) {
+  state.currentFilter = filter;
+  resetFilterBtns();
+  btn.classList.add('active', 'bg-brand-600', 'text-white', 'border-brand-600');
+  renderRows();
+}
+
+function applySearch() {
+  state.currentSearch = document.getElementById('searchInput').value;
+  renderRows();
+}
+
+function applyVisibleFilter() {
+  // Solo re-renderiza sin cambiar filtro
+  renderRows();
+}
+
+function resetFilterBtns() {
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active','bg-brand-600','text-white','border-brand-600');
+  });
+}
+
+// ─────────────────────────────────────────────
+//  EXPORTAR A XLSX
+// ─────────────────────────────────────────────
+function exportResult() {
+  if (!state.rows.length) return;
+
+  const allCols = state.rows[0].allCols;
+  const keyCol  = state.keyCol;
+
+  const output = state.rows.map(row => {
+    const { key, r1, r2, type } = row;
+    const res = state.resolutions[key] || {};
+    const record = { _Estado: typeLabel(type), _ArchivoOrigen: type === 'only1' ? 'Archivo 1' : type === 'only2' ? 'Archivo 2' : 'Ambos' };
+
+    allCols.forEach(col => {
+      const v1 = r1?.[col] ?? '';
+      const v2 = r2?.[col] ?? '';
+      if (type === 'match' || type === 'only1') {
+        record[col] = v1;
+      } else if (type === 'only2') {
+        record[col] = v2;
+      } else {
+        // diff
+        const colRes = res[col];
+        if (!colRes) {
+          // Sin resolver: exportar ambos separados
+          record[col + ' [Archivo1]'] = v1;
+          record[col + ' [Archivo2]'] = v2;
+          record[col + ' [Resuelto]'] = '';
+        } else if (colRes.choice === 'f1') {
+          record[col] = v1;
+        } else if (colRes.choice === 'f2') {
+          record[col] = v2;
+        } else {
+          record[col] = colRes.custom;
+        }
+      }
+    });
+
+    return record;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(output);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Comparación');
+
+  // Aplicar estilos básicos de ancho de columna
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  const colWidths = [];
+  for (let C = range.s.c; C <= range.e.c; C++) colWidths.push({ wch: 22 });
+  ws['!cols'] = colWidths;
+
+  XLSX.writeFile(wb, 'Comparacion_Resultado.xlsx');
+}
+
+function typeLabel(type) {
+  return { match: 'Coincidencia', diff: 'Discrepancia', only1: 'Solo Archivo 1', only2: 'Solo Archivo 2' }[type] || type;
+}
+
+// ─────────────────────────────────────────────
+//  UTILIDADES
+// ─────────────────────────────────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function setStatus(visible, msg) {
+  const el = document.getElementById('statusMsg');
+  const txt = document.getElementById('statusText');
+  el.classList.toggle('hidden', !visible);
+  el.classList.toggle('flex', visible);
+  if (msg) txt.textContent = msg;
+}
+</script>
+
+</body>
+</html>
